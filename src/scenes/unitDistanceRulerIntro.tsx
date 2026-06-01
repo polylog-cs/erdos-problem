@@ -194,7 +194,7 @@ export default makeScene2D(function* (view) {
     ),
     delay(
       1,
-      sequence(0.035, ...graphEdges.map((line) => line.end(1, 0.45, easeInOutCubic))),
+      sequence(0.025, ...graphEdges.map((line) => line.end(1, 0.65, easeInOutCubic))),
     ),
   );
 

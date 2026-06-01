@@ -1,4 +1,4 @@
-import {makeProject} from '@motion-canvas/core';
+import { makeProject } from '@motion-canvas/core';
 
 import cherryCountingTwoWays from './scenes/cherryCountingTwoWays?scene';
 import discreteGeometryAntIsland from './scenes/discreteGeometryAntIsland?scene';

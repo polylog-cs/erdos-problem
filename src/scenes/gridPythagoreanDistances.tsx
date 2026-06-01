@@ -2,7 +2,10 @@ import { Circle, Line, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
+  chain,
   createRef,
+  easeInBack,
+  easeInOutBack,
   easeInOutCubic,
   easeOutCubic,
   makeRef,
@@ -12,71 +15,20 @@ import {
 
 import { palette } from '../lib/palette';
 import {
+  colorFor,
+  gridSegmentsForDirection,
+  latticeDots,
+  pythagoreanDirections,
+  toScreen,
+  undirectedDirections,
+  type Point,
+} from '../lib/pythagoreanGridScene';
+import {
   squareGridCoordinates,
   squareGridExtent,
   squareGridStep,
 } from '../lib/squareGrid';
 import { PolyLatex } from '../utilities/latex';
-
-type Point = [number, number];
-type Segment = [Point, Point];
-
-const rayColors = [
-  '#d4473f',
-  '#c87934',
-  '#c4c92d',
-  '#80c63b',
-  '#37b94a',
-  '#35b880',
-  '#36c1c3',
-  '#3c88d0',
-  '#485fd3',
-  '#7145d4',
-  '#ba3fd0',
-  '#d442a8',
-];
-
-function colorFor(index: number, total: number) {
-  if (total <= rayColors.length) {
-    return rayColors[index % rayColors.length];
-  }
-
-  return `hsl(${Math.round((360 * index) / total)}, 64%, 54%)`;
-}
-
-function toScreen(dx: number, dy: number, step: number): Point {
-  return [dx * step, -dy * step];
-}
-
-function latticeDots(extentX: number, extentY: number, every = 1) {
-  const dots: Point[] = [];
-
-  for (let x = -extentX; x <= extentX; x += every) {
-    for (let y = -extentY; y <= extentY; y += every) {
-      dots.push([x, y]);
-    }
-  }
-
-  return dots;
-}
-
-function pythagoreanDirections(distance: number) {
-  const directions: Point[] = [];
-
-  for (let dx = -distance; dx <= distance; dx++) {
-    for (let dy = -distance; dy <= distance; dy++) {
-      if (dx === 0 && dy === 0) {
-        continue;
-      }
-
-      if (dx * dx + dy * dy === distance * distance) {
-        directions.push([dx, dy]);
-      }
-    }
-  }
-
-  return directions.sort((a, b) => clockwiseTurn(a) - clockwiseTurn(b));
-}
 
 function clockwiseTurn([dx, dy]: Point) {
   const screenAngle = (Math.atan2(-dy, dx) * 180) / Math.PI;
@@ -85,36 +37,16 @@ function clockwiseTurn([dx, dy]: Point) {
   return (360 - normalized) % 360;
 }
 
+function sortedClockwise(directions: Point[]) {
+  return [...directions].sort((a, b) => clockwiseTurn(a) - clockwiseTurn(b));
+}
+
 function rotationFor(direction: Point) {
   return -clockwiseTurn(direction);
 }
 
 function equationLhsFor([dx, dy]: Point) {
   return `${Math.abs(dx)}^2+${Math.abs(dy)}^2`;
-}
-
-function isCanonicalDirection([dx, dy]: Point) {
-  return dx > 0 || (dx === 0 && dy > 0);
-}
-
-function gridSegmentsForDirection([dx, dy]: Point, extent: number) {
-  const segments: Segment[] = [];
-
-  for (let x = -extent; x <= extent; x++) {
-    for (let y = -extent; y <= extent; y++) {
-      const endX = x + dx;
-      const endY = y + dy;
-
-      if (Math.abs(endX) <= extent && Math.abs(endY) <= extent) {
-        segments.push([
-          [x, y],
-          [endX, endY],
-        ]);
-      }
-    }
-  }
-
-  return segments;
 }
 
 function fullGridDotsEnabled() {
@@ -133,7 +65,7 @@ export default makeScene2D(function* (view) {
   const smallDots: Circle[] = [];
   const centerDot = createRef<Circle>();
   const unitLabel = createRef<PolyLatex>();
-  const unitDirections = pythagoreanDirections(1);
+  const unitDirections = sortedClockwise(pythagoreanDirections(1));
   const unitRays: Line[] = [];
   const unitEndpoints: Circle[] = [];
   const unitActive = createRef<Node>();
@@ -141,14 +73,15 @@ export default makeScene2D(function* (view) {
   const unitActiveEnd = createRef<Circle>();
   const fiveFormulaLhs = createRef<PolyLatex>();
   const fiveFormulaRhs = createRef<PolyLatex>();
-  const fiveDirections = pythagoreanDirections(5);
+  const fiveDirections = sortedClockwise(pythagoreanDirections(5));
   const fiveRays: Line[] = [];
   const fiveEndpoints: Circle[] = [];
   const fiveActive = createRef<Node>();
   const fiveActiveLine = createRef<Line>();
   const fiveActiveEnd = createRef<Circle>();
   const globalFiveEdgesLayer = createRef<Node>();
-  const globalFiveDirections = fiveDirections.filter(isCanonicalDirection);
+  const globalFiveEdgesLayers: Node[] = [];
+  const globalFiveDirections = sortedClockwise(pythagoreanDirections(5));
   const globalFiveEdges = globalFiveDirections.map((direction) =>
     gridSegmentsForDirection(direction, squareGridExtent),
   );
@@ -183,24 +116,30 @@ export default makeScene2D(function* (view) {
         />
       ))}
       <Node ref={globalFiveEdgesLayer}>
-        {globalFiveEdges.flatMap((segments, directionIndex) =>
-          segments.map(([[startX, startY], [endX, endY]], edgeIndex) => (
-            <Line
-              ref={makeRef(globalFiveEdgeLines[directionIndex], edgeIndex)}
-              points={[
-                [startX * smallStep, -startY * smallStep],
-                [endX * smallStep, -endY * smallStep],
-              ]}
-              stroke={colorFor(directionIndex, globalFiveDirections.length)}
-              lineWidth={2.2}
-              lineCap={'round'}
-              opacity={0}
-              end={0}
-            />
-          )),
-        )}
+        {globalFiveEdges.flatMap((segments, directionIndex) => (
+          <Node
+            ref={makeRef(globalFiveEdgesLayers, directionIndex)}
+            opacity={0}
+            zIndex={directionIndex}
+          >
+            {segments.map(([[startX, startY], [endX, endY]], edgeIndex) => (
+              <Line
+                ref={makeRef(globalFiveEdgeLines[directionIndex], edgeIndex)}
+                points={[
+                  [startX * smallStep, -startY * smallStep],
+                  [endX * smallStep, -endY * smallStep],
+                ]}
+                stroke={colorFor(directionIndex, fiveDirections.length)}
+                lineWidth={2.2}
+                lineCap={'round'}
+                opacity={1}
+                end={1}
+              />
+            ))}
+          </Node>
+        ))}
       </Node>
-      {latticeDots(squareGridExtent, squareGridExtent).map(([x, y], index) => (
+      {latticeDots(squareGridExtent).map(([x, y], index) => (
         <Circle
           ref={makeRef(smallDots, index)}
           x={x * smallStep}
@@ -435,16 +374,12 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.18);
 
-  for (let index = 0; index < globalFiveEdgeLines.length; index++) {
-    const lines = globalFiveEdgeLines[index];
-
-    for (const line of lines) {
-      line.end(1);
-    }
-
-    yield* all(...lines.map((line) => line.opacity(0.52, 0.22, easeOutCubic)));
-    yield* waitFor(0.08);
-  }
+  yield* sequence(
+    0.2,
+    ...globalFiveEdgesLayers.map((layer) =>
+      chain(layer.opacity(1, 0.2), layer.opacity(0.3, 0.2)),
+    ),
+  );
 
   yield* waitFor(0.7);
   yield* globalFiveEdgesLayer().opacity(0, 0.35, easeInOutCubic);
@@ -467,11 +402,11 @@ export default makeScene2D(function* (view) {
   const denseDotEvery = fullGridDotsEnabled() ? 1 : 10;
   const denseDotSize = fullGridDotsEnabled() ? 1.4 : 3.3;
   const denseDotOpacity = fullGridDotsEnabled() ? 0.25 : 0.45;
-  const sixtyFiveDirections = pythagoreanDirections(65);
+  const sixtyFiveDirections = sortedClockwise(pythagoreanDirections(65));
 
   view.add(
     <Node ref={denseGrid} x={-130} y={25} opacity={0}>
-      {latticeDots(70, 70, denseDotEvery).map(([x, y]) => (
+      {latticeDots(70, denseDotEvery).map(([x, y]) => (
         <Circle
           x={x * denseStep}
           y={-y * denseStep}

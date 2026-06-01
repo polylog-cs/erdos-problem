@@ -13,36 +13,17 @@ import {
 import { PolyLatex } from '../utilities/latex';
 import { palette } from './palette';
 
-type Point = [number, number];
+export type Point = [number, number];
 
-const rayColors = [
-  '#d4473f',
-  '#c87934',
-  '#c4c92d',
-  '#80c63b',
-  '#37b94a',
-  '#35b880',
-  '#36c1c3',
-  '#3c88d0',
-  '#485fd3',
-  '#7145d4',
-  '#ba3fd0',
-  '#d442a8',
-];
-
-function colorFor(index: number, total: number) {
-  if (total <= rayColors.length) {
-    return rayColors[index % rayColors.length];
-  }
-
+export function colorFor(index: number, total: number) {
   return `hsl(${Math.round((360 * index) / total)}, 64%, 54%)`;
 }
 
-function toScreen(dx: number, dy: number, step: number): Point {
+export function toScreen(dx: number, dy: number, step: number): Point {
   return [dx * step, -dy * step];
 }
 
-function pythagoreanDirections(distance: number) {
+export function pythagoreanDirections(distance: number) {
   const directions: Point[] = [];
 
   for (let dx = -distance; dx <= distance; dx++) {
@@ -62,17 +43,17 @@ function pythagoreanDirections(distance: number) {
   );
 }
 
-function undirectedDirections(distance: number) {
+export function undirectedDirections(distance: number) {
   return pythagoreanDirections(distance).filter(([dx, dy]) => {
-    if (dx > 0) {
+    if (dy > 0) {
       return true;
     }
 
-    return dx === 0 && dy > 0;
+    return dy === 0 && dx > 0;
   });
 }
 
-function latticeDots(extent: number, every = 1) {
+export function latticeDots(extent: number, every = 1) {
   const dots: Point[] = [];
 
   for (let x = -extent; x <= extent; x += every) {
@@ -82,6 +63,26 @@ function latticeDots(extent: number, every = 1) {
   }
 
   return dots;
+}
+
+export function gridSegmentsForDirection([dx, dy]: Point, extent: number) {
+  const segments: [Point, Point][] = [];
+
+  for (let x = -extent; x <= extent; x++) {
+    for (let y = -extent; y <= extent; y++) {
+      const endX = x + dx;
+      const endY = y + dy;
+
+      if (Math.abs(endX) <= extent && Math.abs(endY) <= extent) {
+        segments.push([
+          [x, y],
+          [endX, endY],
+        ]);
+      }
+    }
+  }
+
+  return segments;
 }
 
 interface StarSceneOptions {
@@ -211,34 +212,19 @@ export function createAllEdgesSweepScene({
 
     view.add(
       <Node ref={root} y={-35}>
-        {directions.map(([dx, dy], directionIndex) => {
-          const lines: Point[][] = [];
-
-          for (let x = -extent; x <= extent; x++) {
-            for (let y = -extent; y <= extent; y++) {
-              const tx = x + dx;
-              const ty = y + dy;
-
-              if (tx >= -extent && tx <= extent && ty >= -extent && ty <= extent) {
-                lines.push([toScreen(x, y, step), toScreen(tx, ty, step)]);
-              }
-            }
-          }
-
-          return (
-            <Node ref={makeRef(directionGroups, directionIndex)} opacity={0}>
-              {lines.map(([from, to]) => (
-                <Line
-                  points={[from, to]}
-                  stroke={colorFor(directionIndex, directions.length)}
-                  lineWidth={1.8}
-                  lineCap={'round'}
-                  opacity={0.72}
-                />
-              ))}
-            </Node>
-          );
-        })}
+        {directions.map((direction, directionIndex) => (
+          <Node ref={makeRef(directionGroups, directionIndex)} opacity={0}>
+            {gridSegmentsForDirection(direction, extent).map(([from, to]) => (
+              <Line
+                points={[toScreen(...from, step), toScreen(...to, step)]}
+                stroke={colorFor(directionIndex, directions.length)}
+                lineWidth={1.8}
+                lineCap={'round'}
+                opacity={0.72}
+              />
+            ))}
+          </Node>
+        ))}
         {dots.map(([x, y]) => (
           <Circle x={x * step} y={-y * step} size={dotSize} fill={palette.dot} />
         ))}

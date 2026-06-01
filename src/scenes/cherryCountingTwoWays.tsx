@@ -457,7 +457,7 @@ export default makeScene2D(function* (view) {
       x={65}
       y={282}
       tex={'\\#\\mathrm{cherries}\\le 2n^2'}
-      fontSize={38}
+      fontSize={64}
       offsetX={-1}
       opacity={0}
     />,
@@ -499,8 +499,6 @@ export default makeScene2D(function* (view) {
   yield* all(...firstLineLabels.map((label) => label.opacity(0, 0.5)));
 
   yield* waitFor(0.9);
-
-  yield* upperBound().opacity(1, 0.35, easeOutCubic);
 
   yield* all(
     ...firstLines.map((line) => line.opacity(0, 1)),
@@ -571,8 +569,7 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.35);
 
-  yield* all(upperBound().scale(1.08, 0.25, easeOutCubic));
-  yield* upperBound().scale(1, 0.25, easeInOutCubic);
+  yield* upperBound().opacity(1, 0.65, easeOutCubic);
 
   yield* all(
     upperBound().position(upperBoundDock, 0.55, easeInOutCubic),
