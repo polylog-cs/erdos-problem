@@ -1,4 +1,5 @@
-import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -8,9 +9,9 @@ import {
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from './palette';
+import { PolyLatex } from '../utilities/latex';
+import { palette } from './palette';
 
 type Point = [number, number];
 
@@ -122,7 +123,7 @@ export function createPythagoreanStarScene({
               x={x * step}
               y={-y * step}
               size={dotSize}
-              fill={palette.ink}
+              fill={palette.dot}
               opacity={dotEvery === 1 ? 0.95 : 0.42}
             />
           ))}
@@ -158,14 +159,7 @@ export function createPythagoreanStarScene({
       </Node>,
     );
 
-    view.add(
-      <Latex
-        y={325}
-        tex={label}
-        fill={palette.ink}
-        fontSize={36}
-      />,
-    );
+    view.add(<PolyLatex y={325} tex={label} fontSize={36} />);
 
     yield* dotLayer().opacity(1, 0.45, easeOutCubic);
     yield* center().scale(1, 0.25, easeOutCubic);
@@ -181,11 +175,11 @@ export function createPythagoreanStarScene({
 
     yield* all(
       center().scale(1.28, 0.18, easeOutCubic),
-      ...rays.map(ray => ray.lineWidth(lineWidth + 1.5, 0.18, easeOutCubic)),
+      ...rays.map((ray) => ray.lineWidth(lineWidth + 1.5, 0.18, easeOutCubic)),
     );
     yield* all(
       center().scale(1, 0.25, easeInOutCubic),
-      ...rays.map(ray => ray.lineWidth(lineWidth, 0.25, easeInOutCubic)),
+      ...rays.map((ray) => ray.lineWidth(lineWidth, 0.25, easeInOutCubic)),
     );
 
     yield* waitFor(1.2);
@@ -225,22 +219,14 @@ export function createAllEdgesSweepScene({
               const tx = x + dx;
               const ty = y + dy;
 
-              if (
-                tx >= -extent &&
-                tx <= extent &&
-                ty >= -extent &&
-                ty <= extent
-              ) {
+              if (tx >= -extent && tx <= extent && ty >= -extent && ty <= extent) {
                 lines.push([toScreen(x, y, step), toScreen(tx, ty, step)]);
               }
             }
           }
 
           return (
-            <Node
-              ref={makeRef(directionGroups, directionIndex)}
-              opacity={0}
-            >
+            <Node ref={makeRef(directionGroups, directionIndex)} opacity={0}>
               {lines.map(([from, to]) => (
                 <Line
                   points={[from, to]}
@@ -254,28 +240,16 @@ export function createAllEdgesSweepScene({
           );
         })}
         {dots.map(([x, y]) => (
-          <Circle
-            x={x * step}
-            y={-y * step}
-            size={dotSize}
-            fill={palette.ink}
-          />
+          <Circle x={x * step} y={-y * step} size={dotSize} fill={palette.dot} />
         ))}
       </Node>,
     );
 
-    view.add(
-      <Latex
-        y={325}
-        tex={label}
-        fill={palette.ink}
-        fontSize={36}
-      />,
-    );
+    view.add(<PolyLatex y={325} tex={label} fontSize={36} />);
 
     yield* sequence(
       0.18,
-      ...directionGroups.map(group =>
+      ...directionGroups.map((group) =>
         all(
           group.opacity(1, 0.28, easeOutCubic),
           root().scale(1.012, 0.28, easeOutCubic),

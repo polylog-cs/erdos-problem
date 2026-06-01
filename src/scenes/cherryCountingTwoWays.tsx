@@ -9,11 +9,13 @@ import {
   linear,
   makeRef,
   sequence,
+  Vector2,
   waitFor,
 } from '@motion-canvas/core';
 
 import { palette } from '../lib/palette';
 import { PolyLatex } from '../utilities/latex';
+import { PolyTxt } from '../utilities/text';
 
 type PointName =
   | 'top'
@@ -118,7 +120,7 @@ const centerStemLength = 245;
 const upperBoundDock: Point = [205, -350];
 
 function xy(name: PointName) {
-  return points[name];
+  return new Vector2(points[name][0], points[name][1]);
 }
 
 function cherryCenter(phase: number, angle: () => number): Point {
@@ -149,6 +151,7 @@ export default makeScene2D(function* (view) {
   const baseLines: Line[] = [];
   const baseDots: Circle[] = [];
   const firstLines: Line[] = [];
+  const firstLineLabels: PolyTxt[] = [];
   const secondLines: Line[] = [];
   const cherryBalls: Circle[] = [];
   const cherryShines: Circle[] = [];
@@ -170,6 +173,7 @@ export default makeScene2D(function* (view) {
   const threeLeft: Point = [-160, 0];
   const threeRight: Point = [160, 0];
   const phases = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3];
+  const cherryCircles: Circle[] = [];
 
   view.add(
     <Node ref={graph} x={-385} y={15} scale={0.78}>
@@ -205,14 +209,25 @@ export default makeScene2D(function* (view) {
             lineCap={'round'}
             end={0}
             opacity={0}
-          />
+          >
+            <PolyTxt
+              ref={makeRef(firstLineLabels, index)}
+              text="1"
+              position={xy(from)
+                .add(xy(to))
+                .div(2)
+                .add(xy(from).sub(xy(to)).perpendicular.normalized.mul(-30))}
+              fill={green}
+              opacity={0}
+            />
+          </Line>
         ))}
         {secondCherryEdges.map(([from, to], index) => (
           <Line
             ref={makeRef(secondLines, index)}
             points={[xy(from), xy(to)]}
             stroke={greenLight}
-            lineWidth={10}
+            lineWidth={14}
             lineCap={'round'}
             end={0}
             opacity={0}
@@ -273,17 +288,16 @@ export default makeScene2D(function* (view) {
             stroke={redDark}
             lineWidth={4}
             scale={0}
-          />
-        ))}
-        {(['left', 'right'] as PointName[]).map((name, index) => (
-          <Circle
-            ref={makeRef(cherryShines, index)}
-            x={points[name][0] - 11}
-            y={points[name][1] - 13}
-            size={13}
-            fill={redLight}
-            opacity={0}
-          />
+          >
+            <Circle
+              ref={makeRef(cherryShines, index)}
+              x={-11}
+              y={-13}
+              size={13}
+              fill={redLight}
+              opacity={0}
+            />
+          </Circle>
         ))}
         {(['top', 'bottom'] as PointName[]).map((name, index) => (
           <Circle
@@ -368,6 +382,16 @@ export default makeScene2D(function* (view) {
           </Node>
         ))}
       </Node>
+      {(['left', 'right', 'top'] as PointName[]).map((name, index) => (
+        <Circle
+          ref={makeRef(cherryCircles, index)}
+          position={xy(name)}
+          stroke={brown}
+          lineWidth={5}
+          size={xy('left').sub(xy('top')).magnitude * 2}
+          end={0}
+        />
+      ))}
     </Node>,
   );
 
@@ -470,15 +494,29 @@ export default makeScene2D(function* (view) {
     centers[0].scale(1.18, 0.35, easeOutCubic),
   );
 
+  yield* all(...firstLineLabels.map((label) => label.opacity(1, 0.5)));
+  yield* waitFor(0.9);
+  yield* all(...firstLineLabels.map((label) => label.opacity(0, 0.5)));
+
   yield* waitFor(0.9);
 
   yield* upperBound().opacity(1, 0.35, easeOutCubic);
 
   yield* all(
-    ...firstLines.map((line) => line.opacity(0.16, 0.18, easeInOutCubic)),
-    centers[0].opacity(0.45, 0.18, easeInOutCubic),
+    ...firstLines.map((line) => line.opacity(0, 1)),
+    centers[0].scale(0, 1),
+    ...cherryBalls.map((cherry) => cherry.scale(0, 1)),
   );
 
+  yield* waitFor(0.9);
+
+  yield* sequence(
+    1.5,
+    all(...cherryBalls.map((cherry) => cherry.scale(1, 1))),
+    sequence(0.3, ...cherryCircles.slice(0, 2).map((circle) => circle.end(1, 1))),
+  );
+
+  /*
   for (const [leftName, rightName] of samplePairs) {
     yield* all(
       cherryBalls[0].position(points[leftName], 0.15, easeInOutCubic),
@@ -486,25 +524,28 @@ export default makeScene2D(function* (view) {
       cherryShines[0].position(shinePoint(leftName), 0.15, easeInOutCubic),
       cherryShines[1].position(shinePoint(rightName), 0.15, easeInOutCubic),
     );
-  }
+  }*/
+
+  yield* waitFor(1);
 
   yield* all(
-    ...firstLines.map((line) => line.opacity(1, 0.22, easeOutCubic)),
-    centers[0].opacity(1, 0.22, easeOutCubic),
+    centers[0].scale(1.18, 0.5, easeOutCubic),
+    ...firstLines.map((line) => line.opacity(1, 0.8, easeOutCubic)),
   );
 
-  yield* waitFor(0.2);
+  yield* waitFor(0.5);
 
   yield* all(
     sequence(
-      0.09,
+      0,
       ...secondLines.map((line) =>
-        all(line.opacity(1, 0.08, easeOutCubic), line.end(1, 0.45, easeInOutCubic)),
+        all(line.opacity(1, 0.8, easeOutCubic), line.end(1, 0, easeInOutCubic)),
       ),
     ),
-    centers[1].scale(1.18, 0.32, easeOutCubic),
+    centers[1].scale(1.18, 0.5, easeOutCubic),
   );
 
+  /*
   yield* all(
     centers[0].scale(1.34, 0.2, easeOutCubic),
     centers[1].scale(1.34, 0.2, easeOutCubic),
@@ -516,9 +557,9 @@ export default makeScene2D(function* (view) {
     centers[1].scale(1.1, 0.28, easeInOutCubic),
     ...firstLines.map((line) => line.lineWidth(12, 0.28, easeInOutCubic)),
     ...secondLines.map((line) => line.lineWidth(12, 0.28, easeInOutCubic)),
-  );
+  );*/
 
-  yield* waitFor(0.8);
+  yield* waitFor(2);
 
   yield* pseudo3d().opacity(1, 0.55, easeOutCubic);
 
@@ -536,29 +577,41 @@ export default makeScene2D(function* (view) {
   yield* all(
     upperBound().position(upperBoundDock, 0.55, easeInOutCubic),
     upperBound().scale(0.62, 0.55, easeInOutCubic),
-  );
-
-  yield* all(
+    ...cherryCircles.slice(0, 2).map((circle) => circle.opacity(0, 0.55)),
     ...firstLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
     ...secondLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
     ...cherryBalls.map((ball) =>
       all(ball.opacity(0, 0.3, easeInOutCubic), ball.scale(0, 0.3, easeInOutCubic)),
     ),
-    ...cherryShines.map((shine) => shine.opacity(0, 0.25, easeInOutCubic)),
+    centers[0].opacity(0, 0.35, easeInOutCubic),
+    centers[0].scale(0, 0.35, easeInOutCubic),
     centers[1].opacity(0, 0.35, easeInOutCubic),
     centers[1].scale(0, 0.35, easeInOutCubic),
+  );
+
+  yield* waitFor(2);
+
+  yield* all(
     centers[0].opacity(1, 0.35, easeOutCubic),
     centers[0].scale(1.42, 0.35, easeOutCubic),
     centers[0].fill(brown, 0.35, easeOutCubic),
     uLabel().opacity(1, 0.35, easeOutCubic),
     centerFormula().opacity(1, 0.35, easeOutCubic),
-    rotatingCherry().opacity(1, 0.3, easeOutCubic),
+  );
+  yield* waitFor(1);
+  cherryCircles[2].zIndex(-1);
+  cherryCircles[2].stroke(redDark);
+  yield* cherryCircles[2].end(1, 0.5);
+  yield* waitFor(0.5);
+  yield* all(
+    rotatingCherry().opacity(1, 0.5, easeOutCubic),
     sequence(
       0.05,
       ...centerCountLines.map((line) =>
-        all(line.end(1, 0.35, easeInOutCubic), line.opacity(0.18, 0.35, easeOutCubic)),
+        all(line.end(1, 0.5, easeInOutCubic), line.opacity(0.18, 0.5, easeOutCubic)),
       ),
     ),
+    cherryCircles[2].end(1, 0.6),
   );
 
   yield* waitFor(0.2);
