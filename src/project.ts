@@ -1,15 +1,17 @@
-import { makeProject } from '@motion-canvas/core';
+import {makeProject} from '@motion-canvas/core';
 
-import basic from './scenes/examples/basic?scene';
-import code from './scenes/examples/code?scene';
-import fontDemo from './scenes/examples/font-demo?scene';
-import text from './scenes/examples/text?scene';
-import threeDemo from './scenes/examples/three-demo?scene';
-
-import './global.css';
-import './monkeypatch';
+import cherryCountingTwoWays from './scenes/cherryCountingTwoWays?scene';
+import discreteGeometryAntIsland from './scenes/discreteGeometryAntIsland?scene';
+import gridPythagoreanDistances from './scenes/gridPythagoreanDistances?scene';
+import primeProductSweep from './scenes/primeProductSweep?scene';
+import unitDistanceRulerIntro from './scenes/unitDistanceRulerIntro?scene';
 
 export default makeProject({
-  experimentalFeatures: true,
-  scenes: [basic, text, code, fontDemo, threeDemo],
+  scenes: [
+    unitDistanceRulerIntro,
+    cherryCountingTwoWays,
+    gridPythagoreanDistances,
+    primeProductSweep,
+    discreteGeometryAntIsland,
+  ],
 });

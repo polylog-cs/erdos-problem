@@ -23,3 +23,18 @@ Clockwork: https://freesound.org/people/apintofmild/sounds/641577/
 Box: https://freesound.org/people/OverlookHotelRecords/sounds/271378/
 
 Texting: https://freesound.org/people/soundandmelodies/sounds/776192/ (just a recording of iOS's typing sound effect)
+
+## Unit Distance / Erdos Problem Scenes
+
+The active video scenes copied from the old Desktop workspace are in `src/scenes/`, with shared helpers in `src/lib/` and assets in `public/reference/`. The current project order is defined in `src/project.ts`.
+
+Useful commands:
+
+```bash
+npm run dev
+npx tsc --noEmit
+npm run build
+npm run export-scenes -- --scenes gridPythagoreanDistances,primeProductSweep --fps 20 --scale 0.5 --quality 70 --run medium-quality-pythagorean-scenes
+```
+
+Codex collaboration and visual-check preferences are in `AGENTS.md`. The previous project README was copied to `docs/unit-distance-motion-canvas-readme.md`. Existing rendered MP4s were copied to `exports/`.

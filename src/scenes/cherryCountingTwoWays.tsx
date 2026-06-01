@@ -1,0 +1,666 @@
+import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import {
+  all,
+  createRef,
+  createSignal,
+  easeInOutCubic,
+  easeOutCubic,
+  linear,
+  makeRef,
+  sequence,
+  waitFor,
+} from '@motion-canvas/core';
+import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
+
+import {palette} from '../lib/palette';
+
+type PointName =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'topLeftLeaf'
+  | 'topRightLeaf'
+  | 'rightLeaf'
+  | 'bottomRightLeaf'
+  | 'bottomLeftLeaf'
+  | 'leftLeaf';
+type Point = [number, number];
+
+const pointNames: PointName[] = [
+  'top',
+  'right',
+  'bottom',
+  'left',
+  'topLeftLeaf',
+  'topRightLeaf',
+  'rightLeaf',
+  'bottomRightLeaf',
+  'bottomLeftLeaf',
+  'leftLeaf',
+];
+
+const points: Record<PointName, Point> = {
+  top: [0, -155],
+  right: [190, 0],
+  bottom: [0, 155],
+  left: [-190, 0],
+  topLeftLeaf: [-220, -245],
+  topRightLeaf: [220, -245],
+  rightLeaf: [405, -20],
+  bottomRightLeaf: [220, 245],
+  bottomLeftLeaf: [-220, 245],
+  leftLeaf: [-405, -20],
+};
+
+const baseEdges: [PointName, PointName][] = [
+  ['left', 'top'],
+  ['top', 'right'],
+  ['right', 'bottom'],
+  ['bottom', 'left'],
+  ['top', 'topLeftLeaf'],
+  ['top', 'topRightLeaf'],
+  ['right', 'rightLeaf'],
+  ['bottom', 'bottomRightLeaf'],
+  ['bottom', 'bottomLeftLeaf'],
+  ['left', 'leftLeaf'],
+  ['left', 'topLeftLeaf'],
+  ['right', 'topRightLeaf'],
+  ['right', 'bottomRightLeaf'],
+  ['left', 'bottomLeftLeaf'],
+  ['leftLeaf', 'topLeftLeaf'],
+  ['rightLeaf', 'topRightLeaf'],
+];
+
+const firstCherryEdges: [PointName, PointName][] = [
+  ['left', 'top'],
+  ['top', 'right'],
+];
+
+const secondCherryEdges: [PointName, PointName][] = [
+  ['left', 'bottom'],
+  ['bottom', 'right'],
+];
+
+const centerNeighbors: PointName[] = [
+  'left',
+  'right',
+  'topLeftLeaf',
+  'topRightLeaf',
+];
+
+const centerCherryPairs: [PointName, PointName][] = [
+  ['left', 'right'],
+  ['left', 'topLeftLeaf'],
+  ['left', 'topRightLeaf'],
+  ['right', 'topLeftLeaf'],
+  ['right', 'topRightLeaf'],
+  ['topLeftLeaf', 'topRightLeaf'],
+];
+
+const samplePairs: [PointName, PointName][] = [
+  ['topLeftLeaf', 'rightLeaf'],
+  ['leftLeaf', 'bottomRightLeaf'],
+  ['topRightLeaf', 'bottomLeftLeaf'],
+  ['top', 'rightLeaf'],
+  ['leftLeaf', 'topRightLeaf'],
+  ['bottomLeftLeaf', 'right'],
+  ['left', 'right'],
+];
+
+const pointIndex = Object.fromEntries(
+  pointNames.map((name, index) => [name, index]),
+) as Record<PointName, number>;
+
+const red = '#c92932';
+const redDark = '#9f1f28';
+const redLight = '#f37b78';
+const green = '#258b4b';
+const greenLight = '#3fad65';
+const brown = '#80512b';
+const centerStemLength = 245;
+const upperBoundDock: Point = [205, -350];
+
+function xy(name: PointName) {
+  return points[name];
+}
+
+function cherryCenter(phase: number, angle: () => number): Point {
+  return [0, Math.sin(angle() + phase) * 126];
+}
+
+function cherryDepth(phase: number, angle: () => number) {
+  return (Math.cos(angle() + phase) + 1) / 2;
+}
+
+function shinePoint(name: PointName): Point {
+  return [points[name][0] - 11, points[name][1] - 13];
+}
+
+function angleFromU(name: PointName) {
+  const [ux, uy] = points.top;
+  const [x, y] = points[name];
+
+  return (Math.atan2(y - uy, x - ux) * 180) / Math.PI;
+}
+
+export default makeScene2D(function* (view) {
+  view.fill(palette.background);
+
+  const graph = createRef<Node>();
+  const flatGraph = createRef<Node>();
+  const pseudo3d = createRef<Node>();
+  const baseLines: Line[] = [];
+  const baseDots: Circle[] = [];
+  const firstLines: Line[] = [];
+  const secondLines: Line[] = [];
+  const cherryBalls: Circle[] = [];
+  const cherryShines: Circle[] = [];
+  const centers: Circle[] = [];
+  const threeLines: Line[] = [];
+  const threeCenters: Circle[] = [];
+  const threeShines: Circle[] = [];
+  const centerCountLines: Line[] = [];
+  const rotatingCherry = createRef<Node>();
+  const rotatingCherryStems: Node[] = [];
+  const upperBound = createRef<Latex>();
+  const centerFormula = createRef<Latex>();
+  const uLabel = createRef<Latex>();
+  const finalFormula = createRef<Node>();
+  const finalFormulaLines: Latex[] = [];
+  const lowerBoundFormula = createRef<Latex>();
+  const combinedFormula = createRef<Latex>();
+  const angle = createSignal(0);
+  const threeLeft: Point = [-160, 0];
+  const threeRight: Point = [160, 0];
+  const phases = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3];
+
+  view.add(
+    <Node ref={graph} x={-385} y={15} scale={0.78}>
+      <Node ref={flatGraph}>
+        {baseEdges.map(([from, to], index) => (
+          <Line
+            ref={makeRef(baseLines, index)}
+            points={[xy(from), xy(to)]}
+            stroke={palette.edge}
+            lineWidth={3}
+            lineCap={'round'}
+            end={0}
+            opacity={0.5}
+          />
+        ))}
+        {pointNames.map((name, index) => (
+          <Circle
+            ref={makeRef(baseDots, index)}
+            x={points[name][0]}
+            y={points[name][1]}
+            size={15}
+            fill={palette.ink}
+            scale={0}
+            opacity={0.72}
+          />
+        ))}
+        {firstCherryEdges.map(([from, to], index) => (
+          <Line
+            ref={makeRef(firstLines, index)}
+            points={[xy(from), xy(to)]}
+            stroke={green}
+            lineWidth={10}
+            lineCap={'round'}
+            end={0}
+            opacity={0}
+          />
+        ))}
+        {secondCherryEdges.map(([from, to], index) => (
+          <Line
+            ref={makeRef(secondLines, index)}
+            points={[xy(from), xy(to)]}
+            stroke={greenLight}
+            lineWidth={10}
+            lineCap={'round'}
+            end={0}
+            opacity={0}
+          />
+        ))}
+        {centerNeighbors.map((name, index) => (
+          <Line
+            ref={makeRef(centerCountLines, index)}
+            points={[xy('top'), xy(name)]}
+            stroke={green}
+            lineWidth={7}
+            lineCap={'round'}
+            end={0}
+            opacity={0}
+          />
+        ))}
+        <Node ref={rotatingCherry} opacity={0}>
+          {[0, 1].map(index => (
+            <Node
+              ref={makeRef(rotatingCherryStems, index)}
+              x={points.top[0]}
+              y={points.top[1]}
+              rotation={angleFromU(centerCherryPairs[0][index])}
+            >
+              <Line
+                points={[
+                  [0, 0],
+                  [centerStemLength, 0],
+                ]}
+                stroke={green}
+                lineWidth={15}
+                lineCap={'round'}
+              />
+              <Circle
+                x={centerStemLength}
+                size={50}
+                fill={red}
+                stroke={redDark}
+                lineWidth={4}
+              />
+              <Circle
+                x={centerStemLength - 11}
+                y={-13}
+                size={12}
+                fill={redLight}
+                opacity={0.9}
+              />
+            </Node>
+          ))}
+        </Node>
+        {(['left', 'right'] as PointName[]).map((name, index) => (
+          <Circle
+            ref={makeRef(cherryBalls, index)}
+            x={points[name][0]}
+            y={points[name][1]}
+            size={54}
+            fill={red}
+            stroke={redDark}
+            lineWidth={4}
+            scale={0}
+          />
+        ))}
+        {(['left', 'right'] as PointName[]).map((name, index) => (
+          <Circle
+            ref={makeRef(cherryShines, index)}
+            x={points[name][0] - 11}
+            y={points[name][1] - 13}
+            size={13}
+            fill={redLight}
+            opacity={0}
+          />
+        ))}
+        {(['top', 'bottom'] as PointName[]).map((name, index) => (
+          <Circle
+            ref={makeRef(centers, index)}
+            x={points[name][0]}
+            y={points[name][1]}
+            size={26}
+            fill={brown}
+            stroke={palette.background}
+            lineWidth={4}
+            scale={0}
+          />
+        ))}
+        <Latex
+          ref={uLabel}
+          x={points.top[0] + 24}
+          y={points.top[1] - 40}
+          tex={'u'}
+          fill={brown}
+          fontSize={44}
+          opacity={0}
+        />
+      </Node>
+
+      <Node ref={pseudo3d} x={900} y={-5} opacity={0} scale={1.18}>
+        <Circle
+          width={44}
+          height={252}
+          stroke={'#b9c2c7'}
+          lineWidth={3}
+          lineDash={[10, 9]}
+          opacity={0.7}
+        />
+        <Line
+          points={[threeLeft, threeRight]}
+          stroke={'#cad0d4'}
+          lineWidth={3}
+          lineDash={[12, 10]}
+        />
+        {phases.map((phase, phaseIndex) => (
+          <Node>
+            <Line
+              ref={makeRef(threeLines, phaseIndex * 2)}
+              points={[threeLeft, () => cherryCenter(phase, angle)]}
+              stroke={green}
+              lineWidth={() => 4 + cherryDepth(phase, angle) * 5}
+              lineCap={'round'}
+              opacity={() => 0.24 + cherryDepth(phase, angle) * 0.7}
+            />
+            <Line
+              ref={makeRef(threeLines, phaseIndex * 2 + 1)}
+              points={[threeRight, () => cherryCenter(phase, angle)]}
+              stroke={green}
+              lineWidth={() => 4 + cherryDepth(phase, angle) * 5}
+              lineCap={'round'}
+              opacity={() => 0.24 + cherryDepth(phase, angle) * 0.7}
+            />
+            <Circle
+              ref={makeRef(threeCenters, phaseIndex)}
+              x={() => cherryCenter(phase, angle)[0]}
+              y={() => cherryCenter(phase, angle)[1]}
+              size={() => 15 + cherryDepth(phase, angle) * 12}
+              fill={brown}
+              stroke={palette.background}
+              lineWidth={3}
+              opacity={() => 0.38 + cherryDepth(phase, angle) * 0.62}
+            />
+            <Circle
+              ref={makeRef(threeShines, phaseIndex)}
+              x={() => cherryCenter(phase, angle)[0] - 5}
+              y={() => cherryCenter(phase, angle)[1] - 6}
+              size={() => 5 + cherryDepth(phase, angle) * 5}
+              fill={'#c89a6a'}
+              opacity={() => cherryDepth(phase, angle) * 0.7}
+            />
+          </Node>
+        ))}
+        {[threeLeft, threeRight].map(([x, y]) => (
+          <Node>
+            <Circle
+              x={x}
+              y={y}
+              size={64}
+              fill={red}
+              stroke={redDark}
+              lineWidth={5}
+            />
+            <Circle x={x - 13} y={y - 16} size={15} fill={redLight} />
+          </Node>
+        ))}
+      </Node>
+    </Node>,
+  );
+
+  view.add(
+    <Latex
+      ref={centerFormula}
+      x={112}
+      y={138}
+      tex={
+        '\\#\\mathrm{cherries\\ around\\ }u\\ge\\binom{\\#\\mathrm{Neighbors}(u)}{2}\\approx\\#\\mathrm{Neighbors}(u)^2'
+      }
+      fill={palette.ink}
+      fontSize={22}
+      offsetX={-1}
+      opacity={0}
+    />,
+  );
+
+  view.add(
+    <Node ref={finalFormula} x={112} y={190} opacity={0}>
+      {[
+        '\\#\\mathrm{cherries}\\ge\\sum_u\\#\\mathrm{Neighbors}(u)^2',
+        '\\ge n(\\mathrm{avg\\ neighbors})^2=n\\left({2m\\over n}\\right)^2={2m^2\\over n}',
+      ].map((tex, index) => (
+        <Latex
+          ref={makeRef(finalFormulaLines, index)}
+          y={index * 40}
+          tex={tex}
+          fill={palette.ink}
+          fontSize={21}
+          offsetX={-1}
+          opacity={0}
+        />
+      ))}
+    </Node>,
+  );
+
+  view.add(
+    <Latex
+      ref={lowerBoundFormula}
+      x={145}
+      y={265}
+      tex={'\\#\\mathrm{cherries}\\ge{2m^2\\over n}'}
+      fill={palette.ink}
+      fontSize={38}
+      offsetX={-1}
+      opacity={0}
+    />,
+  );
+
+  view.add(
+    <Latex
+      ref={combinedFormula}
+      x={45}
+      y={40}
+      tex={
+        '{2m^2\\over n}\\le 2n^2\\quad\\Longrightarrow\\quad m\\le n^{1.5}'
+      }
+      fill={palette.ink}
+      fontSize={48}
+      offsetX={-1}
+      opacity={0}
+    />,
+  );
+
+  view.add(
+    <Latex
+      ref={upperBound}
+      x={65}
+      y={282}
+      tex={'\\#\\mathrm{cherries}\\le 2n^2'}
+      fill={palette.ink}
+      fontSize={38}
+      offsetX={-1}
+      opacity={0}
+    />,
+  );
+
+  yield* all(
+    sequence(
+      0.04,
+      ...pointNames.map(name =>
+        baseDots[pointIndex[name]].scale(1, 0.25, easeOutCubic),
+      ),
+    ),
+    sequence(
+      0.035,
+      ...baseLines.map(line => line.end(1, 0.45, easeInOutCubic)),
+    ),
+  );
+
+  yield* waitFor(0.2);
+
+  yield* all(
+    sequence(
+      0.08,
+      ...firstLines.map(line =>
+        all(
+          line.opacity(1, 0.1, easeOutCubic),
+          line.end(1, 0.42, easeInOutCubic),
+        ),
+      ),
+    ),
+    centers[0].scale(1, 0.28, easeOutCubic),
+  );
+
+  yield* waitFor(0.15);
+
+  yield* all(
+    ...cherryBalls.map(ball => ball.scale(1, 0.45, easeOutCubic)),
+    ...cherryShines.map(shine => shine.opacity(0.9, 0.35, easeOutCubic)),
+    ...firstLines.map(line => line.lineWidth(14, 0.35, easeOutCubic)),
+    centers[0].scale(1.18, 0.35, easeOutCubic),
+  );
+
+  yield* waitFor(0.9);
+
+  yield* upperBound().opacity(1, 0.35, easeOutCubic);
+
+  yield* all(
+    ...firstLines.map(line => line.opacity(0.16, 0.18, easeInOutCubic)),
+    centers[0].opacity(0.45, 0.18, easeInOutCubic),
+  );
+
+  for (const [leftName, rightName] of samplePairs) {
+    yield* all(
+      cherryBalls[0].position(points[leftName], 0.15, easeInOutCubic),
+      cherryBalls[1].position(points[rightName], 0.15, easeInOutCubic),
+      cherryShines[0].position(shinePoint(leftName), 0.15, easeInOutCubic),
+      cherryShines[1].position(shinePoint(rightName), 0.15, easeInOutCubic),
+    );
+  }
+
+  yield* all(
+    ...firstLines.map(line => line.opacity(1, 0.22, easeOutCubic)),
+    centers[0].opacity(1, 0.22, easeOutCubic),
+  );
+
+  yield* waitFor(0.2);
+
+  yield* all(
+    sequence(
+      0.09,
+      ...secondLines.map(line =>
+        all(
+          line.opacity(1, 0.08, easeOutCubic),
+          line.end(1, 0.45, easeInOutCubic),
+        ),
+      ),
+    ),
+    centers[1].scale(1.18, 0.32, easeOutCubic),
+  );
+
+  yield* all(
+    centers[0].scale(1.34, 0.2, easeOutCubic),
+    centers[1].scale(1.34, 0.2, easeOutCubic),
+    ...firstLines.map(line => line.lineWidth(16, 0.2, easeOutCubic)),
+    ...secondLines.map(line => line.lineWidth(16, 0.2, easeOutCubic)),
+  );
+  yield* all(
+    centers[0].scale(1.1, 0.28, easeInOutCubic),
+    centers[1].scale(1.1, 0.28, easeInOutCubic),
+    ...firstLines.map(line => line.lineWidth(12, 0.28, easeInOutCubic)),
+    ...secondLines.map(line => line.lineWidth(12, 0.28, easeInOutCubic)),
+  );
+
+  yield* waitFor(0.8);
+
+  yield* pseudo3d().opacity(1, 0.55, easeOutCubic);
+
+  yield* angle(Math.PI * 2, 4.2, linear);
+
+  yield* waitFor(0.2);
+
+  yield* pseudo3d().opacity(0, 0.55, easeInOutCubic);
+
+  yield* waitFor(0.35);
+
+  yield* all(
+    upperBound().scale(1.08, 0.25, easeOutCubic),
+    upperBound().fill(palette.ink, 0.25, easeOutCubic),
+  );
+  yield* upperBound().scale(1, 0.25, easeInOutCubic);
+
+  yield* all(
+    upperBound().position(upperBoundDock, 0.55, easeInOutCubic),
+    upperBound().scale(0.62, 0.55, easeInOutCubic),
+    upperBound().fill(palette.mutedInk, 0.4, easeInOutCubic),
+  );
+
+  yield* all(
+    ...firstLines.map(line => line.opacity(0, 0.35, easeInOutCubic)),
+    ...secondLines.map(line => line.opacity(0, 0.35, easeInOutCubic)),
+    ...cherryBalls.map(ball =>
+      all(
+        ball.opacity(0, 0.3, easeInOutCubic),
+        ball.scale(0, 0.3, easeInOutCubic),
+      ),
+    ),
+    ...cherryShines.map(shine => shine.opacity(0, 0.25, easeInOutCubic)),
+    centers[1].opacity(0, 0.35, easeInOutCubic),
+    centers[1].scale(0, 0.35, easeInOutCubic),
+    centers[0].opacity(1, 0.35, easeOutCubic),
+    centers[0].scale(1.42, 0.35, easeOutCubic),
+    centers[0].fill(brown, 0.35, easeOutCubic),
+    uLabel().opacity(1, 0.35, easeOutCubic),
+    centerFormula().opacity(1, 0.35, easeOutCubic),
+    rotatingCherry().opacity(1, 0.3, easeOutCubic),
+    sequence(
+      0.05,
+      ...centerCountLines.map(line =>
+        all(
+          line.end(1, 0.35, easeInOutCubic),
+          line.opacity(0.18, 0.35, easeOutCubic),
+        ),
+      ),
+    ),
+  );
+
+  yield* waitFor(0.2);
+
+  for (const [a, b] of centerCherryPairs) {
+    const selected = [a, b];
+    yield* all(
+      rotatingCherryStems[0].rotation(angleFromU(a), 0.24, easeInOutCubic),
+      rotatingCherryStems[1].rotation(angleFromU(b), 0.24, easeInOutCubic),
+      ...centerCountLines.map((line, index) => {
+        const isSelected = selected.includes(centerNeighbors[index]);
+        return all(
+          line.opacity(isSelected ? 0.55 : 0.12, 0.16, easeOutCubic),
+          line.lineWidth(isSelected ? 8 : 5, 0.16, easeOutCubic),
+        );
+      }),
+      centers[0].scale(1.58, 0.11, easeOutCubic).to(1.42, 0.11),
+    );
+    yield* waitFor(0.12);
+  }
+
+  yield* waitFor(0.25);
+
+  yield* all(
+    finalFormula().opacity(1, 0.25, easeOutCubic),
+    sequence(
+      0.16,
+      ...finalFormulaLines.map(line => line.opacity(1, 0.25, easeOutCubic)),
+    ),
+  );
+
+  yield* waitFor(0.65);
+
+  yield* all(
+    centerFormula().opacity(0, 0.3, easeInOutCubic),
+    finalFormula().opacity(0, 0.3, easeInOutCubic),
+    lowerBoundFormula().opacity(1, 0.3, easeOutCubic),
+  );
+
+  yield* all(
+    lowerBoundFormula().scale(1.08, 0.22, easeOutCubic),
+    upperBound().fill(palette.mutedInk, 0.22, easeOutCubic),
+  );
+  yield* lowerBoundFormula().scale(1, 0.22, easeInOutCubic);
+
+  yield* waitFor(0.25);
+
+  yield* all(
+    upperBound().position([145, -295], 0.5, easeInOutCubic),
+    upperBound().scale(1, 0.5, easeInOutCubic),
+    upperBound().fill(palette.ink, 0.5, easeInOutCubic),
+    upperBound().opacity(1, 0.35, easeOutCubic),
+    lowerBoundFormula().position([145, -235], 0.5, easeInOutCubic),
+  );
+
+  yield* waitFor(0.65);
+
+  yield* all(
+    upperBound().opacity(0, 0.35, easeInOutCubic),
+    lowerBoundFormula().opacity(0, 0.35, easeInOutCubic),
+    combinedFormula().opacity(1, 0.35, easeOutCubic),
+  );
+
+  yield* combinedFormula().scale(1.06, 0.22, easeOutCubic);
+  yield* combinedFormula().scale(1, 0.22, easeInOutCubic);
+
+  yield* waitFor(1.2);
+});

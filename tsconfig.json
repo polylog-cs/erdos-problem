@@ -1,9 +1,28 @@
 {
-  "extends": "@motion-canvas/2d/tsconfig.project.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "bundler",
-    "skipLibCheck": true
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "@motion-canvas/2d/lib",
+    "types": ["@motion-canvas/core/project"]
   },
-  "include": ["src"]
+  "include": [
+    "src/project.ts",
+    "src/exportFrames.ts",
+    "src/project-query.d.ts",
+    "src/lib/**/*",
+    "src/scenes/unitDistanceRulerIntro.tsx",
+    "src/scenes/cherryCountingTwoWays.tsx",
+    "src/scenes/gridPythagoreanDistances.tsx",
+    "src/scenes/primeProductSweep.tsx",
+    "src/scenes/discreteGeometryAntIsland.tsx"
+  ]
 }
