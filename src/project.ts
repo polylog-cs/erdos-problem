@@ -7,6 +7,7 @@ import primeProductSweep from './scenes/primeProductSweep?scene';
 import unitDistanceRulerIntro from './scenes/unitDistanceRulerIntro?scene';
 
 export default makeProject({
+  experimentalFeatures: true,
   scenes: [
     unitDistanceRulerIntro,
     cherryCountingTwoWays,

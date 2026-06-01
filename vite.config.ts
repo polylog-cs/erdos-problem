@@ -1,11 +1,10 @@
 import {defineConfig} from 'vite';
-import motionCanvasModule from '@motion-canvas/vite-plugin';
-
-const motionCanvas =
-  'default' in motionCanvasModule
-    ? motionCanvasModule.default
-    : motionCanvasModule;
+import motionCanvas from '@motion-canvas/vite-plugin';
+import ffmpeg from '@motion-canvas/ffmpeg';
 
 export default defineConfig({
-  plugins: [motionCanvas()],
+  plugins: [
+    motionCanvas(),
+    ffmpeg(),
+  ],
 });
