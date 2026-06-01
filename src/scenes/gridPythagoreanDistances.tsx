@@ -4,6 +4,7 @@ import {
   all,
   chain,
   createRef,
+  delay,
   easeInBack,
   easeInOutBack,
   easeInOutCubic,
@@ -331,17 +332,35 @@ export default makeScene2D(function* (view) {
     ...unitEndpoints.map((endpoint) => endpoint.opacity(0, 0.3, easeInOutCubic)),
   );
 
+  yield* waitFor(1);
+
+  let five = (
+    <PolyLatex
+      tex="5"
+      position={fiveDirections[0]}
+      fill={fiveRays[0].stroke}
+      opacity={0}
+    />
+  );
+  view.add(five);
+
   yield* all(
     fiveActive().opacity(1, 0.25, easeOutCubic),
-    fiveFormulaLhs().opacity(1, 0.35, easeOutCubic),
-    fiveFormulaRhs().opacity(1, 0.35, easeOutCubic),
     fiveRays[0].opacity(0.9, 0.25, easeOutCubic),
     fiveRays[0].end(1, 0.34, easeInOutCubic),
     fiveEndpoints[0].opacity(1, 0.2, easeOutCubic),
     fiveEndpoints[0].scale(1, 0.2, easeOutCubic),
   );
 
-  yield* waitFor(0.25);
+  yield* waitFor(0.5);
+  yield* five.opacity(1, 0.5);
+  yield* waitFor(0.5);
+
+  yield* all(
+    fiveFormulaLhs().opacity(1, 0.5, easeOutCubic),
+    fiveFormulaRhs().opacity(1, 0.5, easeOutCubic),
+    five.opacity(0, 0.5),
+  );
 
   for (let index = 1; index < fiveDirections.length; index++) {
     const color = colorFor(index, fiveDirections.length);
@@ -350,8 +369,8 @@ export default makeScene2D(function* (view) {
       fiveActive().rotation(rotationFor(fiveDirections[index]), 0.36, easeInOutCubic),
       fiveActiveLine().stroke(color, 0.36),
       fiveActiveEnd().fill(color, 0.36),
+      delay(0.18, fiveFormulaLhs().tex(equationLhsFor(fiveDirections[index]), 0)),
     );
-    fiveFormulaLhs().tex(equationLhsFor(fiveDirections[index]));
     yield* all(
       fiveRays[index].opacity(0.9, 0.16, easeOutCubic),
       fiveRays[index].end(1, 0.24, easeInOutCubic),
@@ -470,6 +489,8 @@ export default makeScene2D(function* (view) {
     </Node>,
   );
 
+  denseGrid().x(-300);
+
   view.add(
     <>
       <PolyLatex
@@ -492,37 +513,37 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={whyTitle}
-        x={275}
+        x={175}
         y={-265}
-        tex={'\\mathrm{Why\\ is\\ }65\\mathrm{\\ special?}'}
-        fontSize={35}
+        tex={'\\text{Why is 65 special?}'}
+        fontSize={64}
         offsetX={-1}
         opacity={0}
       />
       <PolyLatex
         ref={primeLine}
-        x={275}
+        x={175}
         y={-190}
-        tex={'\\mathrm{primes\\ with\\ remainder\\ }1\\pmod4'}
-        fontSize={25}
+        tex={'\\text{primes with remainder 1 mod 4}'}
+        fontSize={40}
         offsetX={-1}
         opacity={0}
       />
       <PolyLatex
         ref={primeList}
-        x={275}
-        y={-140}
+        x={175}
+        y={-120}
         tex={'5,13,17,29,37,\\ldots'}
-        fontSize={32}
+        fontSize={50}
         offsetX={-1}
         opacity={0}
       />
       <PolyLatex
         ref={productLine}
-        x={275}
-        y={-75}
-        tex={'5\\times13=65'}
-        fontSize={37}
+        x={175}
+        y={-45}
+        tex={'5\\cdot13=65'}
+        fontSize={50}
         offsetX={-1}
         opacity={0}
       />
@@ -553,23 +574,26 @@ export default makeScene2D(function* (view) {
   for (let index = 1; index < sixtyFiveDirections.length; index++) {
     const color = colorFor(index, sixtyFiveDirections.length);
 
+    const one = 0.05 + 0.6 / (index + 1);
     yield* all(
       sixtyFiveActive().rotation(
         rotationFor(sixtyFiveDirections[index]),
-        0.2,
+        one / 2,
         easeInOutCubic,
       ),
-      sixtyFiveActiveLine().stroke(color, 0.2),
-      sixtyFiveActiveEnd().fill(color, 0.2),
+      sixtyFiveActiveLine().stroke(color, one / 2),
+      sixtyFiveActiveEnd().fill(color, one / 2),
+      delay(
+        one / 2,
+        denseVectorFormulaLhs().tex(equationLhsFor(sixtyFiveDirections[index]), 0),
+      ),
     );
-    denseVectorFormulaLhs().tex(equationLhsFor(sixtyFiveDirections[index]));
-    yield* all(
-      sixtyFiveRays[index].opacity(0.78, 0.11, easeOutCubic),
-      sixtyFiveRays[index].end(1, 0.18, easeInOutCubic),
-      sixtyFiveEndpoints[index].opacity(1, 0.11, easeOutCubic),
-      sixtyFiveEndpoints[index].scale(1, 0.11, easeOutCubic),
-    );
-    yield* waitFor(0.02);
+    sixtyFiveRays[index].end(1),
+      yield* all(
+        sixtyFiveRays[index].opacity(0.78, one / 2, easeOutCubic),
+        sixtyFiveEndpoints[index].opacity(1, one / 2, easeOutCubic),
+        sixtyFiveEndpoints[index].scale(1, one / 2, easeOutCubic),
+      );
   }
 
   yield* sixtyFiveActive().opacity(0, 0.22, easeInOutCubic);
@@ -577,13 +601,15 @@ export default makeScene2D(function* (view) {
   yield* all(
     denseVectorFormulaLhs().opacity(0, 0.25, easeInOutCubic),
     denseVectorFormulaRhs().opacity(0, 0.25, easeInOutCubic),
-    whyTitle().opacity(1, 0.35, easeOutCubic),
+    whyTitle().opacity(1, 0.65, easeOutCubic),
   );
+  yield* waitFor(1);
   yield* all(
-    primeLine().opacity(1, 0.35, easeOutCubic),
-    primeList().opacity(1, 0.35, easeOutCubic),
+    primeLine().opacity(1, 0.65, easeOutCubic),
+    primeList().opacity(1, 0.65, easeOutCubic),
   );
-  yield* waitFor(0.35);
-  yield* productLine().opacity(1, 0.35, easeOutCubic);
+  yield* waitFor(1);
+  yield* waitFor(0.65);
+  yield* productLine().opacity(1, 0.65, easeOutCubic);
   yield* waitFor(1.3);
 });
