@@ -12,6 +12,7 @@
     "export-scenes": "node scripts/export-scenes.mjs"
   },
   "dependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
     "@motion-canvas/2d": "^3.17.0",
     "@motion-canvas/core": "^3.17.0",
     "@motion-canvas/ui": "^3.17.0",
