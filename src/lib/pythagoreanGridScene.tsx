@@ -23,24 +23,40 @@ export function toScreen(dx: number, dy: number, step: number): Point {
   return [dx * step, -dy * step];
 }
 
+export function clockwiseTurn([dx, dy]: Point) {
+  const screenAngle = (Math.atan2(-dy, dx) * 180) / Math.PI;
+  const normalized = (screenAngle + 360) % 360;
+
+  return (360 - normalized) % 360;
+}
+
+export function rotationFor(direction: Point) {
+  return -clockwiseTurn(direction);
+}
+
 export function pythagoreanDirections(distance: number) {
   const directions: Point[] = [];
+  const squared = distance * distance;
 
   for (let dx = -distance; dx <= distance; dx++) {
-    for (let dy = -distance; dy <= distance; dy++) {
-      if (dx === 0 && dy === 0) {
-        continue;
-      }
+    const dySquared = squared - dx * dx;
+    const dy = Math.sqrt(dySquared);
 
-      if (dx * dx + dy * dy === distance * distance) {
-        directions.push([dx, dy]);
-      }
+    if (!Number.isInteger(dy)) {
+      continue;
     }
+
+    if (dy === 0) {
+      if (dx !== 0) {
+        directions.push([dx, 0]);
+      }
+      continue;
+    }
+
+    directions.push([dx, dy], [dx, -dy]);
   }
 
-  return directions.sort(
-    ([ax, ay], [bx, by]) => Math.atan2(-ay, ax) - Math.atan2(-by, bx),
-  );
+  return directions.sort((a, b) => clockwiseTurn(a) - clockwiseTurn(b));
 }
 
 export function undirectedDirections(distance: number) {

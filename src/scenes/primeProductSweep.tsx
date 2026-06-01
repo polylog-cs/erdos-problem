@@ -1,90 +1,14 @@
-import { Circle, Line, Node } from '@motion-canvas/2d';
+import { Circle, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
-import {
-  all,
-  createRef,
-  easeInOutCubic,
-  easeOutCubic,
-  makeRef,
-  waitFor,
-} from '@motion-canvas/core';
+import { all, createRef, easeInOutCubic, easeOutCubic, waitFor } from '@motion-canvas/core';
 
 import { palette } from '../lib/palette';
+import { pythagoreanDirections, type Point } from '../lib/pythagoreanGridScene';
+import { RotatingWheel } from '../lib/rotatingWheel';
 import { PolyLatex } from '../utilities/latex';
-
-type Point = [number, number];
-type Sweep = {
-  distance: number;
-  directions: Point[];
-  endpoints: Circle[];
-  rays: Line[];
-  step: number;
-};
 
 const sweepDistances = [1105, 1104, 1106];
 const starRadius = 370;
-const rayColors = [
-  '#d4473f',
-  '#c87934',
-  '#c4c92d',
-  '#80c63b',
-  '#37b94a',
-  '#35b880',
-  '#36c1c3',
-  '#3c88d0',
-  '#485fd3',
-  '#7145d4',
-  '#ba3fd0',
-  '#d442a8',
-];
-
-function colorFor(index: number, total: number) {
-  if (total <= rayColors.length) {
-    return rayColors[index % rayColors.length];
-  }
-
-  return `hsl(${Math.round((360 * index) / total)}, 64%, 54%)`;
-}
-
-function toScreen(dx: number, dy: number, step: number): Point {
-  return [dx * step, -dy * step];
-}
-
-function clockwiseTurn([dx, dy]: Point) {
-  const screenAngle = (Math.atan2(-dy, dx) * 180) / Math.PI;
-  const normalized = (screenAngle + 360) % 360;
-
-  return (360 - normalized) % 360;
-}
-
-function rotationFor(direction: Point) {
-  return -clockwiseTurn(direction);
-}
-
-function pythagoreanDirections(distance: number) {
-  const directions: Point[] = [];
-  const seen = new Set<string>();
-
-  for (let dx = -distance; dx <= distance; dx++) {
-    const dySquared = distance * distance - dx * dx;
-    const dy = Math.sqrt(dySquared);
-
-    if (!Number.isInteger(dy)) {
-      continue;
-    }
-
-    for (const signedDy of dy === 0 ? [0] : [dy, -dy]) {
-      const key = `${dx},${signedDy}`;
-
-      if (!seen.has(key)) {
-        seen.add(key);
-        directions.push([dx, signedDy]);
-      }
-    }
-  }
-
-  return directions.sort((a, b) => clockwiseTurn(a) - clockwiseTurn(b));
-}
 
 function equationLhsFor([dx, dy]: Point) {
   return `${Math.abs(dx)}^2+${Math.abs(dy)}^2`;
@@ -103,67 +27,26 @@ export default makeScene2D(function* (view) {
   const constructionDetailLine = createRef<PolyLatex>();
   const star = createRef<Node>();
   const center = createRef<Circle>();
-  const active = createRef<Node>();
-  const activeLine = createRef<Line>();
-  const activeEnd = createRef<Circle>();
-  const sweeps: Sweep[] = sweepDistances.map((sweepDistance) => ({
-    distance: sweepDistance,
-    directions: pythagoreanDirections(sweepDistance),
-    endpoints: [] as Circle[],
-    rays: [] as Line[],
-    step: starRadius / sweepDistance,
-  }));
-  const featuredSweep = sweeps[0];
+
+  const wheels = sweepDistances.map(
+    (distance) =>
+      new RotatingWheel({
+        directions: pythagoreanDirections(distance),
+        step: starRadius / distance,
+        style: {
+          rayWidth: 2.25,
+          endpointSize: 5.4,
+          activeLineWidth: 5.6,
+          activeEndSize: 12,
+        },
+      }),
+  );
+  const featuredWheel = wheels[0];
 
   view.add(
     <>
       <Node ref={star} x={-305} y={55} opacity={0}>
-        {sweeps.flatMap((sweep) =>
-          sweep.directions.map(([dx, dy], index) => (
-            <Line
-              ref={makeRef(sweep.rays, index)}
-              points={[[0, 0], toScreen(dx, dy, sweep.step)]}
-              stroke={colorFor(index, sweep.directions.length)}
-              lineWidth={2.25}
-              lineCap={'round'}
-              opacity={0}
-              end={0}
-            />
-          )),
-        )}
-        {sweeps.flatMap((sweep) =>
-          sweep.directions.map(([dx, dy], index) => (
-            <Circle
-              ref={makeRef(sweep.endpoints, index)}
-              x={dx * sweep.step}
-              y={-dy * sweep.step}
-              size={5.4}
-              fill={colorFor(index, sweep.directions.length)}
-              opacity={0}
-              scale={0}
-            />
-          )),
-        )}
-        <Node ref={active} opacity={0}>
-          <Line
-            ref={activeLine}
-            points={[
-              [0, 0],
-              [starRadius, 0],
-            ]}
-            stroke={colorFor(0, featuredSweep.directions.length)}
-            lineWidth={5.6}
-            lineCap={'round'}
-          />
-          <Circle
-            ref={activeEnd}
-            x={starRadius}
-            size={12}
-            fill={colorFor(0, featuredSweep.directions.length)}
-            stroke={palette.background}
-            lineWidth={3}
-          />
-        </Node>
+        {wheels.map((wheel) => wheel.view)}
         <Circle
           ref={center}
           size={13}
@@ -177,7 +60,7 @@ export default makeScene2D(function* (view) {
         ref={distanceLabel}
         x={-305}
         y={-360}
-        tex={`${featuredSweep.distance}`}
+        tex={`${sweepDistances[0]}`}
         fill={palette.ink}
         fontSize={48}
         opacity={0}
@@ -196,7 +79,7 @@ export default makeScene2D(function* (view) {
         ref={equationLhs}
         x={560}
         y={-195}
-        tex={equationLhsFor(featuredSweep.directions[0])}
+        tex={equationLhsFor(featuredWheel.directions[0])}
         fill={palette.ink}
         fontSize={33}
         offsetX={1}
@@ -206,7 +89,7 @@ export default makeScene2D(function* (view) {
         ref={equationRhs}
         x={574}
         y={-195}
-        tex={`=${featuredSweep.distance}^2`}
+        tex={`=${sweepDistances[0]}^2`}
         fill={palette.ink}
         fontSize={33}
         offsetX={-1}
@@ -255,89 +138,54 @@ export default makeScene2D(function* (view) {
     </>,
   );
 
-  function setSweepText(sweep: Sweep, directionIndex = 0) {
-    distanceLabel().tex(`${sweep.distance}`);
-    equationLhs().tex(equationLhsFor(sweep.directions[directionIndex]));
-    equationRhs().tex(`=${sweep.distance}^2`);
+  function setSweepText(distance: number, direction: Point) {
+    distanceLabel().tex(`${distance}`);
+    equationLhs().tex(equationLhsFor(direction));
+    equationRhs().tex(`=${distance}^2`);
   }
 
-  function resetSweep(sweep: Sweep) {
-    for (const ray of sweep.rays) {
-      ray.opacity(0);
-      ray.end(0);
-    }
-
-    for (const endpoint of sweep.endpoints) {
-      endpoint.opacity(0);
-      endpoint.scale(0);
-    }
-  }
-
-  function* fadeSweepOut(sweep: Sweep) {
-    yield* all(
-      ...sweep.rays.map((ray) => ray.opacity(0, 0.24, easeInOutCubic)),
-      ...sweep.endpoints.map((endpoint) => endpoint.opacity(0, 0.24, easeInOutCubic)),
-      ...sweep.endpoints.map((endpoint) => endpoint.scale(0, 0.24, easeInOutCubic)),
-    );
-    resetSweep(sweep);
-  }
-
-  function* runSweep(sweep: Sweep, rotationDuration: number) {
-    resetSweep(sweep);
-    setSweepText(sweep);
-    active().rotation(rotationFor(sweep.directions[0]));
-    activeLine().stroke(colorFor(0, sweep.directions.length));
-    activeEnd().fill(colorFor(0, sweep.directions.length));
+  function* runSweep(
+    wheel: RotatingWheel,
+    distance: number,
+    rotationDuration: number,
+  ) {
+    wheel.reset();
+    setSweepText(distance, wheel.directions[0]);
 
     yield* all(
-      active().opacity(1, 0.25, easeOutCubic),
+      wheel.active().opacity(1, 0.25, easeOutCubic),
       equationLhs().opacity(1, 0.35, easeOutCubic),
       equationRhs().opacity(1, 0.35, easeOutCubic),
-      sweep.rays[0].opacity(0.76, 0.2, easeOutCubic),
-      sweep.rays[0].end(1, 0.28, easeInOutCubic),
-      sweep.endpoints[0].opacity(1, 0.16, easeOutCubic),
-      sweep.endpoints[0].scale(1, 0.16, easeOutCubic),
+      wheel.revealRay(0, { duration: 0.2, opacity: 0.76, endDuration: 0.28 }),
     );
 
-    for (let index = 1; index < sweep.directions.length; index++) {
-      const color = colorFor(index, sweep.directions.length);
-
-      yield* all(
-        active().rotation(
-          rotationFor(sweep.directions[index]),
-          rotationDuration,
-          easeInOutCubic,
-        ),
-        activeLine().stroke(color, rotationDuration),
-        activeEnd().fill(color, rotationDuration),
-      );
-      equationLhs().tex(equationLhsFor(sweep.directions[index]));
-      yield* all(
-        sweep.rays[index].opacity(0.68, 0.045, easeOutCubic),
-        sweep.rays[index].end(1, 0.07, easeInOutCubic),
-        sweep.endpoints[index].opacity(1, 0.045, easeOutCubic),
-        sweep.endpoints[index].scale(1, 0.045, easeOutCubic),
-      );
+    for (let index = 1; index < wheel.directions.length; index++) {
+      yield* wheel.rotateArmTo(index, rotationDuration);
+      equationLhs().tex(equationLhsFor(wheel.directions[index]));
+      yield* wheel.revealRay(index, { duration: 0.045, opacity: 0.68 });
     }
 
-    yield* active().opacity(0, 0.2, easeInOutCubic);
+    yield* wheel.active().opacity(0, 0.2, easeInOutCubic);
   }
 
-  function* restoreSweepPicture(sweep: Sweep) {
-    const lastDirection = sweep.directions.length - 1;
+  function* fadeSweepOut(wheel: RotatingWheel) {
+    yield* wheel.fadeOut(0.24);
+    wheel.reset();
+  }
 
-    setSweepText(sweep, lastDirection);
-    for (const ray of sweep.rays) {
-      ray.end(1);
-    }
+  function* restoreSweepPicture(wheel: RotatingWheel, distance: number) {
+    const lastDirection = wheel.directions[wheel.directions.length - 1];
+
+    setSweepText(distance, lastDirection);
+    wheel.showAll();
 
     yield* all(
       product().opacity(1, 0.35, easeOutCubic),
       equationLhs().opacity(1, 0.35, easeOutCubic),
       equationRhs().opacity(1, 0.35, easeOutCubic),
-      ...sweep.rays.map((ray) => ray.opacity(0.68, 0.35, easeOutCubic)),
-      ...sweep.endpoints.map((endpoint) => endpoint.opacity(1, 0.25, easeOutCubic)),
-      ...sweep.endpoints.map((endpoint) => endpoint.scale(1, 0.25, easeOutCubic)),
+      ...wheel.rays.map((ray) => ray.opacity(0.68, 0.35, easeOutCubic)),
+      ...wheel.endpoints.map((endpoint) => endpoint.opacity(1, 0.25, easeOutCubic)),
+      ...wheel.endpoints.map((endpoint) => endpoint.scale(1, 0.25, easeOutCubic)),
     );
   }
 
@@ -349,35 +197,35 @@ export default makeScene2D(function* (view) {
   );
   yield* waitFor(0.35);
 
-  yield* runSweep(sweeps[0], 0.075);
+  yield* runSweep(wheels[0], sweepDistances[0], 0.075);
   yield* waitFor(0.45);
   yield* all(
     product().opacity(0, 0.25, easeInOutCubic),
     equationLhs().opacity(0, 0.25, easeInOutCubic),
     equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(sweeps[0]),
+    fadeSweepOut(wheels[0]),
   );
 
   yield* waitFor(0.2);
-  yield* runSweep(sweeps[1], 0.28);
+  yield* runSweep(wheels[1], sweepDistances[1], 0.28);
   yield* waitFor(0.45);
   yield* all(
     equationLhs().opacity(0, 0.25, easeInOutCubic),
     equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(sweeps[1]),
+    fadeSweepOut(wheels[1]),
   );
 
   yield* waitFor(0.2);
-  yield* runSweep(sweeps[2], 0.28);
+  yield* runSweep(wheels[2], sweepDistances[2], 0.28);
   yield* waitFor(0.45);
   yield* all(
     equationLhs().opacity(0, 0.25, easeInOutCubic),
     equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(sweeps[2]),
+    fadeSweepOut(wheels[2]),
   );
 
   yield* waitFor(0.25);
-  yield* restoreSweepPicture(sweeps[0]);
+  yield* restoreSweepPicture(wheels[0], sweepDistances[0]);
   yield* waitFor(0.25);
   yield* all(
     optimizeLine().opacity(1, 0.35, easeOutCubic),

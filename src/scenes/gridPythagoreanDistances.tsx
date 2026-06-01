@@ -5,8 +5,6 @@ import {
   chain,
   createRef,
   delay,
-  easeInBack,
-  easeInOutBack,
   easeInOutCubic,
   easeOutCubic,
   makeRef,
@@ -20,31 +18,15 @@ import {
   gridSegmentsForDirection,
   latticeDots,
   pythagoreanDirections,
-  toScreen,
-  undirectedDirections,
   type Point,
 } from '../lib/pythagoreanGridScene';
+import { RotatingWheel } from '../lib/rotatingWheel';
 import {
   squareGridCoordinates,
   squareGridExtent,
   squareGridStep,
 } from '../lib/squareGrid';
 import { PolyLatex } from '../utilities/latex';
-
-function clockwiseTurn([dx, dy]: Point) {
-  const screenAngle = (Math.atan2(-dy, dx) * 180) / Math.PI;
-  const normalized = (screenAngle + 360) % 360;
-
-  return (360 - normalized) % 360;
-}
-
-function sortedClockwise(directions: Point[]) {
-  return [...directions].sort((a, b) => clockwiseTurn(a) - clockwiseTurn(b));
-}
-
-function rotationFor(direction: Point) {
-  return -clockwiseTurn(direction);
-}
 
 function equationLhsFor([dx, dy]: Point) {
   return `${Math.abs(dx)}^2+${Math.abs(dy)}^2`;
@@ -66,23 +48,34 @@ export default makeScene2D(function* (view) {
   const smallDots: Circle[] = [];
   const centerDot = createRef<Circle>();
   const unitLabel = createRef<PolyLatex>();
-  const unitDirections = sortedClockwise(pythagoreanDirections(1));
-  const unitRays: Line[] = [];
-  const unitEndpoints: Circle[] = [];
-  const unitActive = createRef<Node>();
-  const unitActiveLine = createRef<Line>();
-  const unitActiveEnd = createRef<Circle>();
   const fiveFormulaLhs = createRef<PolyLatex>();
   const fiveFormulaRhs = createRef<PolyLatex>();
-  const fiveDirections = sortedClockwise(pythagoreanDirections(5));
-  const fiveRays: Line[] = [];
-  const fiveEndpoints: Circle[] = [];
-  const fiveActive = createRef<Node>();
-  const fiveActiveLine = createRef<Line>();
-  const fiveActiveEnd = createRef<Circle>();
   const globalFiveEdgesLayer = createRef<Node>();
   const globalFiveEdgesLayers: Node[] = [];
-  const globalFiveDirections = sortedClockwise(pythagoreanDirections(5));
+
+  const unitWheel = new RotatingWheel({
+    directions: pythagoreanDirections(1),
+    step: smallStep,
+    style: {
+      rayWidth: 7.5,
+      endpointSize: 12,
+      activeLineWidth: 9,
+      activeEndSize: 14,
+      endpointStroke: true,
+    },
+  });
+  const fiveWheel = new RotatingWheel({
+    directions: pythagoreanDirections(5),
+    step: smallStep,
+    style: {
+      rayWidth: 4.8,
+      endpointSize: 10,
+      activeLineWidth: 9,
+      activeEndSize: 15,
+    },
+  });
+
+  const globalFiveDirections = fiveWheel.directions;
   const globalFiveEdges = globalFiveDirections.map((direction) =>
     gridSegmentsForDirection(direction, squareGridExtent),
   );
@@ -130,7 +123,7 @@ export default makeScene2D(function* (view) {
                   [startX * smallStep, -startY * smallStep],
                   [endX * smallStep, -endY * smallStep],
                 ]}
-                stroke={colorFor(directionIndex, fiveDirections.length)}
+                stroke={colorFor(directionIndex, fiveWheel.directions.length)}
                 lineWidth={2.2}
                 lineCap={'round'}
                 opacity={1}
@@ -168,96 +161,8 @@ export default makeScene2D(function* (view) {
         fontSize={30}
         opacity={0}
       />
-
-      {unitDirections.map(([dx, dy], index) => (
-        <Line
-          ref={makeRef(unitRays, index)}
-          points={[[0, 0], toScreen(dx, dy, smallStep)]}
-          stroke={colorFor(index, unitDirections.length)}
-          lineWidth={7.5}
-          lineCap={'round'}
-          opacity={0}
-          end={0}
-        />
-      ))}
-      {unitDirections.map(([dx, dy], index) => (
-        <Circle
-          ref={makeRef(unitEndpoints, index)}
-          x={dx * smallStep}
-          y={-dy * smallStep}
-          size={12}
-          fill={colorFor(index, unitDirections.length)}
-          stroke={palette.background}
-          lineWidth={2.5}
-          opacity={0}
-          scale={0}
-        />
-      ))}
-
-      <Node ref={unitActive} opacity={0}>
-        <Line
-          ref={unitActiveLine}
-          points={[
-            [0, 0],
-            [smallStep, 0],
-          ]}
-          stroke={colorFor(0, unitDirections.length)}
-          lineWidth={9}
-          lineCap={'round'}
-        />
-        <Circle
-          ref={unitActiveEnd}
-          x={smallStep}
-          size={14}
-          fill={colorFor(0, unitDirections.length)}
-          stroke={palette.background}
-          lineWidth={3}
-        />
-      </Node>
-
-      {fiveDirections.map(([dx, dy], index) => (
-        <Line
-          ref={makeRef(fiveRays, index)}
-          points={[[0, 0], toScreen(dx, dy, smallStep)]}
-          stroke={colorFor(index, fiveDirections.length)}
-          lineWidth={4.8}
-          lineCap={'round'}
-          opacity={0}
-          end={0}
-        />
-      ))}
-      {fiveDirections.map(([dx, dy], index) => (
-        <Circle
-          ref={makeRef(fiveEndpoints, index)}
-          x={dx * smallStep}
-          y={-dy * smallStep}
-          size={10}
-          fill={colorFor(index, fiveDirections.length)}
-          opacity={0}
-          scale={0}
-        />
-      ))}
-
-      <Node ref={fiveActive} opacity={0}>
-        <Line
-          ref={fiveActiveLine}
-          points={[
-            [0, 0],
-            [5 * smallStep, 0],
-          ]}
-          stroke={colorFor(0, fiveDirections.length)}
-          lineWidth={9}
-          lineCap={'round'}
-        />
-        <Circle
-          ref={fiveActiveEnd}
-          x={5 * smallStep}
-          size={15}
-          fill={colorFor(0, fiveDirections.length)}
-          stroke={palette.background}
-          lineWidth={3}
-        />
-      </Node>
+      {unitWheel.view}
+      {fiveWheel.view}
     </Node>,
   );
 
@@ -267,7 +172,7 @@ export default makeScene2D(function* (view) {
         ref={fiveFormulaLhs}
         x={565}
         y={-255}
-        tex={equationLhsFor(fiveDirections[0])}
+        tex={equationLhsFor(fiveWheel.directions[0])}
         fontSize={46}
         offsetX={1}
         opacity={0}
@@ -296,99 +201,74 @@ export default makeScene2D(function* (view) {
 
   yield* centerDot().scale(1, 0.22, easeOutCubic);
   yield* all(
-    unitActive().opacity(1, 0.22, easeOutCubic),
-    unitRays[0].opacity(0.9, 0.22, easeOutCubic),
-    unitRays[0].end(1, 0.34, easeInOutCubic),
-    unitEndpoints[0].opacity(1, 0.2, easeOutCubic),
-    unitEndpoints[0].scale(1, 0.2, easeOutCubic),
+    unitWheel.active().opacity(1, 0.22, easeOutCubic),
+    unitWheel.revealRay(0, { duration: 0.22, opacity: 0.9, endDuration: 0.34 }),
   );
   yield* unitLabel().opacity(1, 0.25, easeOutCubic);
 
   yield* waitFor(0.18);
 
-  for (let index = 1; index < unitDirections.length; index++) {
-    const color = colorFor(index, unitDirections.length);
-
-    yield* all(
-      unitActive().rotation(rotationFor(unitDirections[index]), 0.22, easeInOutCubic),
-      unitActiveLine().stroke(color, 0.22),
-      unitActiveEnd().fill(color, 0.22),
-    );
-    yield* all(
-      unitRays[index].opacity(0.9, 0.12, easeOutCubic),
-      unitRays[index].end(1, 0.18, easeInOutCubic),
-      unitEndpoints[index].opacity(1, 0.12, easeOutCubic),
-      unitEndpoints[index].scale(1, 0.12, easeOutCubic),
-    );
+  for (let index = 1; index < unitWheel.directions.length; index++) {
+    yield* unitWheel.rotateArmTo(index, 0.22);
+    yield* unitWheel.revealRay(index, { duration: 0.12, opacity: 0.9 });
     yield* waitFor(0.04);
   }
 
-  yield* unitActive().opacity(0, 0.18, easeInOutCubic);
+  yield* unitWheel.active().opacity(0, 0.18, easeInOutCubic);
   yield* waitFor(0.45);
 
   yield* all(
     unitLabel().opacity(0, 0.25, easeInOutCubic),
-    ...unitRays.map((ray) => ray.opacity(0, 0.3, easeInOutCubic)),
-    ...unitEndpoints.map((endpoint) => endpoint.opacity(0, 0.3, easeInOutCubic)),
+    unitWheel.fadeOut(0.3),
   );
 
   yield* waitFor(1);
 
-  let five = (
+  const fiveLabel = (
     <PolyLatex
       tex="5"
-      position={fiveDirections[0]}
-      fill={fiveRays[0].stroke}
+      position={fiveWheel.directions[0]}
+      fill={fiveWheel.rays[0].stroke}
       opacity={0}
     />
   );
-  view.add(five);
+  view.add(fiveLabel);
 
   yield* all(
-    fiveActive().opacity(1, 0.25, easeOutCubic),
-    fiveRays[0].opacity(0.9, 0.25, easeOutCubic),
-    fiveRays[0].end(1, 0.34, easeInOutCubic),
-    fiveEndpoints[0].opacity(1, 0.2, easeOutCubic),
-    fiveEndpoints[0].scale(1, 0.2, easeOutCubic),
+    fiveWheel.active().opacity(1, 0.25, easeOutCubic),
+    fiveWheel.revealRay(0, { duration: 0.25, opacity: 0.9, endDuration: 0.34 }),
   );
 
   yield* waitFor(0.5);
-  yield* five.opacity(1, 0.5);
+  yield* fiveLabel.opacity(1, 0.5);
   yield* waitFor(0.5);
 
   yield* all(
     fiveFormulaLhs().opacity(1, 0.5, easeOutCubic),
     fiveFormulaRhs().opacity(1, 0.5, easeOutCubic),
-    five.opacity(0, 0.5),
+    fiveLabel.opacity(0, 0.5),
   );
 
-  for (let index = 1; index < fiveDirections.length; index++) {
-    const color = colorFor(index, fiveDirections.length);
-
+  for (let index = 1; index < fiveWheel.directions.length; index++) {
     yield* all(
-      fiveActive().rotation(rotationFor(fiveDirections[index]), 0.36, easeInOutCubic),
-      fiveActiveLine().stroke(color, 0.36),
-      fiveActiveEnd().fill(color, 0.36),
-      delay(0.18, fiveFormulaLhs().tex(equationLhsFor(fiveDirections[index]), 0)),
+      fiveWheel.rotateArmTo(index, 0.36),
+      delay(
+        0.18,
+        fiveFormulaLhs().tex(equationLhsFor(fiveWheel.directions[index]), 0),
+      ),
     );
-    yield* all(
-      fiveRays[index].opacity(0.9, 0.16, easeOutCubic),
-      fiveRays[index].end(1, 0.24, easeInOutCubic),
-      fiveEndpoints[index].opacity(1, 0.16, easeOutCubic),
-      fiveEndpoints[index].scale(1, 0.16, easeOutCubic),
-    );
+    yield* fiveWheel.revealRay(index, { duration: 0.16, opacity: 0.9 });
     yield* waitFor(0.04);
   }
 
-  yield* fiveActive().opacity(0, 0.22, easeInOutCubic);
+  yield* fiveWheel.active().opacity(0, 0.22, easeInOutCubic);
   yield* waitFor(0.35);
 
   yield* all(
     centerDot().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaLhs().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaRhs().opacity(0, 0.25, easeInOutCubic),
-    ...fiveRays.map((ray) => ray.opacity(0, 0.3, easeInOutCubic)),
-    ...fiveEndpoints.map((endpoint) => endpoint.opacity(0, 0.3, easeInOutCubic)),
+    fiveWheel.fadeOut(0.3),
   );
 
   yield* waitFor(0.18);
@@ -412,16 +292,21 @@ export default makeScene2D(function* (view) {
   const primeList = createRef<PolyLatex>();
   const productLine = createRef<PolyLatex>();
   const denseCenter = createRef<Circle>();
-  const sixtyFiveActive = createRef<Node>();
-  const sixtyFiveActiveLine = createRef<Line>();
-  const sixtyFiveActiveEnd = createRef<Circle>();
-  const sixtyFiveRays: Line[] = [];
-  const sixtyFiveEndpoints: Circle[] = [];
   const denseStep = 5.5;
   const denseDotEvery = fullGridDotsEnabled() ? 1 : 10;
   const denseDotSize = fullGridDotsEnabled() ? 1.4 : 3.3;
   const denseDotOpacity = fullGridDotsEnabled() ? 0.25 : 0.45;
-  const sixtyFiveDirections = sortedClockwise(pythagoreanDirections(65));
+
+  const sixtyFiveWheel = new RotatingWheel({
+    directions: pythagoreanDirections(65),
+    step: denseStep,
+    style: {
+      rayWidth: 2.9,
+      endpointSize: 6.5,
+      activeLineWidth: 6.5,
+      activeEndSize: 13,
+    },
+  });
 
   view.add(
     <Node ref={denseGrid} x={-130} y={25} opacity={0}>
@@ -434,50 +319,7 @@ export default makeScene2D(function* (view) {
           opacity={denseDotOpacity}
         />
       ))}
-
-      {sixtyFiveDirections.map(([dx, dy], index) => (
-        <Line
-          ref={makeRef(sixtyFiveRays, index)}
-          points={[[0, 0], toScreen(dx, dy, denseStep)]}
-          stroke={colorFor(index, sixtyFiveDirections.length)}
-          lineWidth={2.9}
-          lineCap={'round'}
-          opacity={0}
-          end={0}
-        />
-      ))}
-      {sixtyFiveDirections.map(([dx, dy], index) => (
-        <Circle
-          ref={makeRef(sixtyFiveEndpoints, index)}
-          x={dx * denseStep}
-          y={-dy * denseStep}
-          size={6.5}
-          fill={colorFor(index, sixtyFiveDirections.length)}
-          opacity={0}
-          scale={0}
-        />
-      ))}
-
-      <Node ref={sixtyFiveActive} opacity={0}>
-        <Line
-          ref={sixtyFiveActiveLine}
-          points={[
-            [0, 0],
-            [65 * denseStep, 0],
-          ]}
-          stroke={colorFor(0, sixtyFiveDirections.length)}
-          lineWidth={6.5}
-          lineCap={'round'}
-        />
-        <Circle
-          ref={sixtyFiveActiveEnd}
-          x={65 * denseStep}
-          size={13}
-          fill={colorFor(0, sixtyFiveDirections.length)}
-          stroke={palette.background}
-          lineWidth={3}
-        />
-      </Node>
+      {sixtyFiveWheel.view}
       <Circle
         ref={denseCenter}
         size={13}
@@ -497,7 +339,7 @@ export default makeScene2D(function* (view) {
         ref={denseVectorFormulaLhs}
         x={555}
         y={-255}
-        tex={equationLhsFor(sixtyFiveDirections[0])}
+        tex={equationLhsFor(sixtyFiveWheel.directions[0])}
         fontSize={42}
         offsetX={1}
         opacity={0}
@@ -560,43 +402,38 @@ export default makeScene2D(function* (view) {
     denseCenter().scale(1, 0.28, easeOutCubic),
   );
   yield* all(
-    sixtyFiveActive().opacity(1, 0.25, easeOutCubic),
+    sixtyFiveWheel.active().opacity(1, 0.25, easeOutCubic),
     denseVectorFormulaLhs().opacity(1, 0.35, easeOutCubic),
     denseVectorFormulaRhs().opacity(1, 0.35, easeOutCubic),
-    sixtyFiveRays[0].opacity(0.82, 0.24, easeOutCubic),
-    sixtyFiveRays[0].end(1, 0.34, easeInOutCubic),
-    sixtyFiveEndpoints[0].opacity(1, 0.2, easeOutCubic),
-    sixtyFiveEndpoints[0].scale(1, 0.2, easeOutCubic),
+    sixtyFiveWheel.revealRay(0, {
+      duration: 0.24,
+      opacity: 0.82,
+      endDuration: 0.34,
+    }),
   );
 
   yield* waitFor(0.25);
 
-  for (let index = 1; index < sixtyFiveDirections.length; index++) {
-    const color = colorFor(index, sixtyFiveDirections.length);
-
+  for (let index = 1; index < sixtyFiveWheel.directions.length; index++) {
     const one = 0.05 + 0.6 / (index + 1);
     yield* all(
-      sixtyFiveActive().rotation(
-        rotationFor(sixtyFiveDirections[index]),
-        one / 2,
-        easeInOutCubic,
-      ),
-      sixtyFiveActiveLine().stroke(color, one / 2),
-      sixtyFiveActiveEnd().fill(color, one / 2),
+      sixtyFiveWheel.rotateArmTo(index, one / 2),
       delay(
         one / 2,
-        denseVectorFormulaLhs().tex(equationLhsFor(sixtyFiveDirections[index]), 0),
+        denseVectorFormulaLhs().tex(
+          equationLhsFor(sixtyFiveWheel.directions[index]),
+          0,
+        ),
       ),
     );
-    sixtyFiveRays[index].end(1),
-      yield* all(
-        sixtyFiveRays[index].opacity(0.78, one / 2, easeOutCubic),
-        sixtyFiveEndpoints[index].opacity(1, one / 2, easeOutCubic),
-        sixtyFiveEndpoints[index].scale(1, one / 2, easeOutCubic),
-      );
+    yield* sixtyFiveWheel.revealRay(index, {
+      duration: one / 2,
+      opacity: 0.78,
+      instantEnd: true,
+    });
   }
 
-  yield* sixtyFiveActive().opacity(0, 0.22, easeInOutCubic);
+  yield* sixtyFiveWheel.active().opacity(0, 0.22, easeInOutCubic);
   yield* waitFor(0.35);
   yield* all(
     denseVectorFormulaLhs().opacity(0, 0.25, easeInOutCubic),
