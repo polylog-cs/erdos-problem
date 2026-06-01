@@ -1,0 +1,31 @@
+@font-face {
+  font-family: 'TeX Gyre Schola';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('texgyreschola-regular.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'TeX Gyre Schola';
+  font-style: italic;
+  font-weight: 400;
+  font-display: block;
+  src: url('texgyreschola-italic.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'TeX Gyre Schola';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('texgyreschola-bold.otf') format('opentype');
+}
+
+@font-face {
+  font-family: 'TeX Gyre Schola';
+  font-style: italic;
+  font-weight: 700;
+  font-display: block;
+  src: url('texgyreschola-bolditalic.otf') format('opentype');
+}
