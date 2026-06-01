@@ -1,8 +1,8 @@
-import {Circle, Txt} from '@motion-canvas/2d';
-import {all, createRef, easeInOutCubic, waitFor} from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
+import { Circle, Txt } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
+import { all, createRef, easeInOutCubic, waitFor } from '@motion-canvas/core';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
 
 export default makeScene2D(function* (view) {
   view.fill(palette.background);

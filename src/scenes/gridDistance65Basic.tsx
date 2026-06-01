@@ -1,3 +1,3 @@
-import {createGridUnitScene} from '../lib/gridUnitScene';
+import { createGridUnitScene } from '../lib/gridUnitScene';
 
 export default createGridUnitScene();

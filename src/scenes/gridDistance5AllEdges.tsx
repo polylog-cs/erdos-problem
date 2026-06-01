@@ -1,4 +1,4 @@
-import {createAllEdgesSweepScene} from '../lib/pythagoreanGridScene';
+import { createAllEdgesSweepScene } from '../lib/pythagoreanGridScene';
 
 export default createAllEdgesSweepScene({
   distance: 5,

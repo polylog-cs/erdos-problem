@@ -1,4 +1,5 @@
-import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -8,14 +9,14 @@ import {
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
 import {
   squareGridCoordinates,
   squareGridExtent,
   squareGridStep,
 } from '../lib/squareGrid';
+import { PolyLatex } from '../utilities/latex';
 
 type Point = [number, number];
 type Segment = [Point, Point];
@@ -131,15 +132,15 @@ export default makeScene2D(function* (view) {
   const smallLines: Line[] = [];
   const smallDots: Circle[] = [];
   const centerDot = createRef<Circle>();
-  const unitLabel = createRef<Latex>();
+  const unitLabel = createRef<PolyLatex>();
   const unitDirections = pythagoreanDirections(1);
   const unitRays: Line[] = [];
   const unitEndpoints: Circle[] = [];
   const unitActive = createRef<Node>();
   const unitActiveLine = createRef<Line>();
   const unitActiveEnd = createRef<Circle>();
-  const fiveFormulaLhs = createRef<Latex>();
-  const fiveFormulaRhs = createRef<Latex>();
+  const fiveFormulaLhs = createRef<PolyLatex>();
+  const fiveFormulaRhs = createRef<PolyLatex>();
   const fiveDirections = pythagoreanDirections(5);
   const fiveRays: Line[] = [];
   const fiveEndpoints: Circle[] = [];
@@ -148,7 +149,7 @@ export default makeScene2D(function* (view) {
   const fiveActiveEnd = createRef<Circle>();
   const globalFiveEdgesLayer = createRef<Node>();
   const globalFiveDirections = fiveDirections.filter(isCanonicalDirection);
-  const globalFiveEdges = globalFiveDirections.map(direction =>
+  const globalFiveEdges = globalFiveDirections.map((direction) =>
     gridSegmentsForDirection(direction, squareGridExtent),
   );
   const globalFiveEdgeLines = globalFiveEdges.map(() => [] as Line[]);
@@ -205,7 +206,7 @@ export default makeScene2D(function* (view) {
           x={x * smallStep}
           y={y * smallStep}
           size={7}
-          fill={palette.ink}
+          fill={palette.dot}
           opacity={0.86}
           scale={0}
         />
@@ -219,12 +220,11 @@ export default makeScene2D(function* (view) {
         lineWidth={3}
         scale={0}
       />
-      <Latex
+      <PolyLatex
         ref={unitLabel}
         x={smallStep / 2}
         y={-22}
         tex={'1'}
-        fill={palette.ink}
         fontSize={30}
         opacity={0}
       />
@@ -257,7 +257,10 @@ export default makeScene2D(function* (view) {
       <Node ref={unitActive} opacity={0}>
         <Line
           ref={unitActiveLine}
-          points={[[0, 0], [smallStep, 0]]}
+          points={[
+            [0, 0],
+            [smallStep, 0],
+          ]}
           stroke={colorFor(0, unitDirections.length)}
           lineWidth={9}
           lineCap={'round'}
@@ -298,7 +301,10 @@ export default makeScene2D(function* (view) {
       <Node ref={fiveActive} opacity={0}>
         <Line
           ref={fiveActiveLine}
-          points={[[0, 0], [5 * smallStep, 0]]}
+          points={[
+            [0, 0],
+            [5 * smallStep, 0],
+          ]}
           stroke={colorFor(0, fiveDirections.length)}
           lineWidth={9}
           lineCap={'round'}
@@ -317,22 +323,20 @@ export default makeScene2D(function* (view) {
 
   view.add(
     <>
-      <Latex
+      <PolyLatex
         ref={fiveFormulaLhs}
         x={565}
         y={-255}
         tex={equationLhsFor(fiveDirections[0])}
-        fill={palette.ink}
         fontSize={46}
         offsetX={1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={fiveFormulaRhs}
         x={582}
         y={-255}
         tex={'=5^2'}
-        fill={palette.ink}
         fontSize={46}
         offsetX={-1}
         opacity={0}
@@ -343,17 +347,11 @@ export default makeScene2D(function* (view) {
   yield* all(
     sequence(
       0.018,
-      ...smallLines.map(line =>
-        all(
-          line.opacity(1, 0.22, easeOutCubic),
-          line.end(1, 0.68, easeInOutCubic),
-        ),
+      ...smallLines.map((line) =>
+        all(line.opacity(1, 0.22, easeOutCubic), line.end(1, 0.68, easeInOutCubic)),
       ),
     ),
-    sequence(
-      0.0035,
-      ...smallDots.map(dot => dot.scale(1, 0.22, easeOutCubic)),
-    ),
+    sequence(0.0035, ...smallDots.map((dot) => dot.scale(1, 0.22, easeOutCubic))),
   );
 
   yield* centerDot().scale(1, 0.22, easeOutCubic);
@@ -390,8 +388,8 @@ export default makeScene2D(function* (view) {
 
   yield* all(
     unitLabel().opacity(0, 0.25, easeInOutCubic),
-    ...unitRays.map(ray => ray.opacity(0, 0.3, easeInOutCubic)),
-    ...unitEndpoints.map(endpoint => endpoint.opacity(0, 0.3, easeInOutCubic)),
+    ...unitRays.map((ray) => ray.opacity(0, 0.3, easeInOutCubic)),
+    ...unitEndpoints.map((endpoint) => endpoint.opacity(0, 0.3, easeInOutCubic)),
   );
 
   yield* all(
@@ -431,8 +429,8 @@ export default makeScene2D(function* (view) {
     centerDot().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaLhs().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaRhs().opacity(0, 0.25, easeInOutCubic),
-    ...fiveRays.map(ray => ray.opacity(0, 0.3, easeInOutCubic)),
-    ...fiveEndpoints.map(endpoint => endpoint.opacity(0, 0.3, easeInOutCubic)),
+    ...fiveRays.map((ray) => ray.opacity(0, 0.3, easeInOutCubic)),
+    ...fiveEndpoints.map((endpoint) => endpoint.opacity(0, 0.3, easeInOutCubic)),
   );
 
   yield* waitFor(0.18);
@@ -444,7 +442,7 @@ export default makeScene2D(function* (view) {
       line.end(1);
     }
 
-    yield* all(...lines.map(line => line.opacity(0.52, 0.22, easeOutCubic)));
+    yield* all(...lines.map((line) => line.opacity(0.52, 0.22, easeOutCubic)));
     yield* waitFor(0.08);
   }
 
@@ -453,12 +451,12 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.22);
 
   const denseGrid = createRef<Node>();
-  const denseVectorFormulaLhs = createRef<Latex>();
-  const denseVectorFormulaRhs = createRef<Latex>();
-  const whyTitle = createRef<Latex>();
-  const primeLine = createRef<Latex>();
-  const primeList = createRef<Latex>();
-  const productLine = createRef<Latex>();
+  const denseVectorFormulaLhs = createRef<PolyLatex>();
+  const denseVectorFormulaRhs = createRef<PolyLatex>();
+  const whyTitle = createRef<PolyLatex>();
+  const primeLine = createRef<PolyLatex>();
+  const primeList = createRef<PolyLatex>();
+  const productLine = createRef<PolyLatex>();
   const denseCenter = createRef<Circle>();
   const sixtyFiveActive = createRef<Node>();
   const sixtyFiveActiveLine = createRef<Line>();
@@ -478,7 +476,7 @@ export default makeScene2D(function* (view) {
           x={x * denseStep}
           y={-y * denseStep}
           size={denseDotSize}
-          fill={palette.ink}
+          fill={palette.dot}
           opacity={denseDotOpacity}
         />
       ))}
@@ -509,7 +507,10 @@ export default makeScene2D(function* (view) {
       <Node ref={sixtyFiveActive} opacity={0}>
         <Line
           ref={sixtyFiveActiveLine}
-          points={[[0, 0], [65 * denseStep, 0]]}
+          points={[
+            [0, 0],
+            [65 * denseStep, 0],
+          ]}
           stroke={colorFor(0, sixtyFiveDirections.length)}
           lineWidth={6.5}
           lineCap={'round'}
@@ -536,62 +537,56 @@ export default makeScene2D(function* (view) {
 
   view.add(
     <>
-      <Latex
+      <PolyLatex
         ref={denseVectorFormulaLhs}
         x={555}
         y={-255}
         tex={equationLhsFor(sixtyFiveDirections[0])}
-        fill={palette.ink}
         fontSize={42}
         offsetX={1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={denseVectorFormulaRhs}
         x={572}
         y={-255}
         tex={'=65^2'}
-        fill={palette.ink}
         fontSize={42}
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={whyTitle}
         x={275}
         y={-265}
         tex={'\\mathrm{Why\\ is\\ }65\\mathrm{\\ special?}'}
-        fill={palette.ink}
         fontSize={35}
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={primeLine}
         x={275}
         y={-190}
         tex={'\\mathrm{primes\\ with\\ remainder\\ }1\\pmod4'}
-        fill={palette.ink}
         fontSize={25}
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={primeList}
         x={275}
         y={-140}
         tex={'5,13,17,29,37,\\ldots'}
-        fill={palette.ink}
         fontSize={32}
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={productLine}
         x={275}
         y={-75}
         tex={'5\\times13=65'}
-        fill={palette.ink}
         fontSize={37}
         offsetX={-1}
         opacity={0}

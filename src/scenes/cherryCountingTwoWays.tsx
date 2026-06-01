@@ -1,4 +1,5 @@
-import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -10,9 +11,9 @@ import {
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
+import { PolyLatex } from '../utilities/latex';
 
 type PointName =
   | 'top'
@@ -82,12 +83,7 @@ const secondCherryEdges: [PointName, PointName][] = [
   ['bottom', 'right'],
 ];
 
-const centerNeighbors: PointName[] = [
-  'left',
-  'right',
-  'topLeftLeaf',
-  'topRightLeaf',
-];
+const centerNeighbors: PointName[] = ['left', 'right', 'topLeftLeaf', 'topRightLeaf'];
 
 const centerCherryPairs: [PointName, PointName][] = [
   ['left', 'right'],
@@ -163,13 +159,13 @@ export default makeScene2D(function* (view) {
   const centerCountLines: Line[] = [];
   const rotatingCherry = createRef<Node>();
   const rotatingCherryStems: Node[] = [];
-  const upperBound = createRef<Latex>();
-  const centerFormula = createRef<Latex>();
-  const uLabel = createRef<Latex>();
+  const upperBound = createRef<PolyLatex>();
+  const centerFormula = createRef<PolyLatex>();
+  const uLabel = createRef<PolyLatex>();
   const finalFormula = createRef<Node>();
-  const finalFormulaLines: Latex[] = [];
-  const lowerBoundFormula = createRef<Latex>();
-  const combinedFormula = createRef<Latex>();
+  const finalFormulaLines: PolyLatex[] = [];
+  const lowerBoundFormula = createRef<PolyLatex>();
+  const combinedFormula = createRef<PolyLatex>();
   const angle = createSignal(0);
   const threeLeft: Point = [-160, 0];
   const threeRight: Point = [160, 0];
@@ -234,7 +230,7 @@ export default makeScene2D(function* (view) {
           />
         ))}
         <Node ref={rotatingCherry} opacity={0}>
-          {[0, 1].map(index => (
+          {[0, 1].map((index) => (
             <Node
               ref={makeRef(rotatingCherryStems, index)}
               x={points.top[0]}
@@ -301,7 +297,7 @@ export default makeScene2D(function* (view) {
             scale={0}
           />
         ))}
-        <Latex
+        <PolyLatex
           ref={uLabel}
           x={points.top[0] + 24}
           y={points.top[1] - 40}
@@ -367,14 +363,7 @@ export default makeScene2D(function* (view) {
         ))}
         {[threeLeft, threeRight].map(([x, y]) => (
           <Node>
-            <Circle
-              x={x}
-              y={y}
-              size={64}
-              fill={red}
-              stroke={redDark}
-              lineWidth={5}
-            />
+            <Circle x={x} y={y} size={64} fill={red} stroke={redDark} lineWidth={5} />
             <Circle x={x - 13} y={y - 16} size={15} fill={redLight} />
           </Node>
         ))}
@@ -383,14 +372,13 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Latex
+    <PolyLatex
       ref={centerFormula}
       x={112}
       y={138}
       tex={
         '\\#\\mathrm{cherries\\ around\\ }u\\ge\\binom{\\#\\mathrm{Neighbors}(u)}{2}\\approx\\#\\mathrm{Neighbors}(u)^2'
       }
-      fill={palette.ink}
       fontSize={22}
       offsetX={-1}
       opacity={0}
@@ -403,11 +391,10 @@ export default makeScene2D(function* (view) {
         '\\#\\mathrm{cherries}\\ge\\sum_u\\#\\mathrm{Neighbors}(u)^2',
         '\\ge n(\\mathrm{avg\\ neighbors})^2=n\\left({2m\\over n}\\right)^2={2m^2\\over n}',
       ].map((tex, index) => (
-        <Latex
+        <PolyLatex
           ref={makeRef(finalFormulaLines, index)}
-          y={index * 40}
+          y={30 + index * 60}
           tex={tex}
-          fill={palette.ink}
           fontSize={21}
           offsetX={-1}
           opacity={0}
@@ -417,12 +404,11 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Latex
+    <PolyLatex
       ref={lowerBoundFormula}
       x={145}
       y={265}
       tex={'\\#\\mathrm{cherries}\\ge{2m^2\\over n}'}
-      fill={palette.ink}
       fontSize={38}
       offsetX={-1}
       opacity={0}
@@ -430,14 +416,11 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Latex
+    <PolyLatex
       ref={combinedFormula}
       x={45}
       y={40}
-      tex={
-        '{2m^2\\over n}\\le 2n^2\\quad\\Longrightarrow\\quad m\\le n^{1.5}'
-      }
-      fill={palette.ink}
+      tex={'{2m^2\\over n}\\le 2n^2\\quad\\Longrightarrow\\quad m\\le n^{1.5}'}
       fontSize={48}
       offsetX={-1}
       opacity={0}
@@ -445,12 +428,11 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Latex
+    <PolyLatex
       ref={upperBound}
       x={65}
       y={282}
       tex={'\\#\\mathrm{cherries}\\le 2n^2'}
-      fill={palette.ink}
       fontSize={38}
       offsetX={-1}
       opacity={0}
@@ -460,14 +442,11 @@ export default makeScene2D(function* (view) {
   yield* all(
     sequence(
       0.04,
-      ...pointNames.map(name =>
+      ...pointNames.map((name) =>
         baseDots[pointIndex[name]].scale(1, 0.25, easeOutCubic),
       ),
     ),
-    sequence(
-      0.035,
-      ...baseLines.map(line => line.end(1, 0.45, easeInOutCubic)),
-    ),
+    sequence(0.035, ...baseLines.map((line) => line.end(1, 0.45, easeInOutCubic))),
   );
 
   yield* waitFor(0.2);
@@ -475,11 +454,8 @@ export default makeScene2D(function* (view) {
   yield* all(
     sequence(
       0.08,
-      ...firstLines.map(line =>
-        all(
-          line.opacity(1, 0.1, easeOutCubic),
-          line.end(1, 0.42, easeInOutCubic),
-        ),
+      ...firstLines.map((line) =>
+        all(line.opacity(1, 0.1, easeOutCubic), line.end(1, 0.42, easeInOutCubic)),
       ),
     ),
     centers[0].scale(1, 0.28, easeOutCubic),
@@ -488,9 +464,9 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.15);
 
   yield* all(
-    ...cherryBalls.map(ball => ball.scale(1, 0.45, easeOutCubic)),
-    ...cherryShines.map(shine => shine.opacity(0.9, 0.35, easeOutCubic)),
-    ...firstLines.map(line => line.lineWidth(14, 0.35, easeOutCubic)),
+    ...cherryBalls.map((ball) => ball.scale(1, 0.45, easeOutCubic)),
+    ...cherryShines.map((shine) => shine.opacity(0.9, 0.35, easeOutCubic)),
+    ...firstLines.map((line) => line.lineWidth(14, 0.35, easeOutCubic)),
     centers[0].scale(1.18, 0.35, easeOutCubic),
   );
 
@@ -499,7 +475,7 @@ export default makeScene2D(function* (view) {
   yield* upperBound().opacity(1, 0.35, easeOutCubic);
 
   yield* all(
-    ...firstLines.map(line => line.opacity(0.16, 0.18, easeInOutCubic)),
+    ...firstLines.map((line) => line.opacity(0.16, 0.18, easeInOutCubic)),
     centers[0].opacity(0.45, 0.18, easeInOutCubic),
   );
 
@@ -513,7 +489,7 @@ export default makeScene2D(function* (view) {
   }
 
   yield* all(
-    ...firstLines.map(line => line.opacity(1, 0.22, easeOutCubic)),
+    ...firstLines.map((line) => line.opacity(1, 0.22, easeOutCubic)),
     centers[0].opacity(1, 0.22, easeOutCubic),
   );
 
@@ -522,11 +498,8 @@ export default makeScene2D(function* (view) {
   yield* all(
     sequence(
       0.09,
-      ...secondLines.map(line =>
-        all(
-          line.opacity(1, 0.08, easeOutCubic),
-          line.end(1, 0.45, easeInOutCubic),
-        ),
+      ...secondLines.map((line) =>
+        all(line.opacity(1, 0.08, easeOutCubic), line.end(1, 0.45, easeInOutCubic)),
       ),
     ),
     centers[1].scale(1.18, 0.32, easeOutCubic),
@@ -535,14 +508,14 @@ export default makeScene2D(function* (view) {
   yield* all(
     centers[0].scale(1.34, 0.2, easeOutCubic),
     centers[1].scale(1.34, 0.2, easeOutCubic),
-    ...firstLines.map(line => line.lineWidth(16, 0.2, easeOutCubic)),
-    ...secondLines.map(line => line.lineWidth(16, 0.2, easeOutCubic)),
+    ...firstLines.map((line) => line.lineWidth(16, 0.2, easeOutCubic)),
+    ...secondLines.map((line) => line.lineWidth(16, 0.2, easeOutCubic)),
   );
   yield* all(
     centers[0].scale(1.1, 0.28, easeInOutCubic),
     centers[1].scale(1.1, 0.28, easeInOutCubic),
-    ...firstLines.map(line => line.lineWidth(12, 0.28, easeInOutCubic)),
-    ...secondLines.map(line => line.lineWidth(12, 0.28, easeInOutCubic)),
+    ...firstLines.map((line) => line.lineWidth(12, 0.28, easeInOutCubic)),
+    ...secondLines.map((line) => line.lineWidth(12, 0.28, easeInOutCubic)),
   );
 
   yield* waitFor(0.8);
@@ -557,28 +530,21 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.35);
 
-  yield* all(
-    upperBound().scale(1.08, 0.25, easeOutCubic),
-    upperBound().fill(palette.ink, 0.25, easeOutCubic),
-  );
+  yield* all(upperBound().scale(1.08, 0.25, easeOutCubic));
   yield* upperBound().scale(1, 0.25, easeInOutCubic);
 
   yield* all(
     upperBound().position(upperBoundDock, 0.55, easeInOutCubic),
     upperBound().scale(0.62, 0.55, easeInOutCubic),
-    upperBound().fill(palette.mutedInk, 0.4, easeInOutCubic),
   );
 
   yield* all(
-    ...firstLines.map(line => line.opacity(0, 0.35, easeInOutCubic)),
-    ...secondLines.map(line => line.opacity(0, 0.35, easeInOutCubic)),
-    ...cherryBalls.map(ball =>
-      all(
-        ball.opacity(0, 0.3, easeInOutCubic),
-        ball.scale(0, 0.3, easeInOutCubic),
-      ),
+    ...firstLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
+    ...secondLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
+    ...cherryBalls.map((ball) =>
+      all(ball.opacity(0, 0.3, easeInOutCubic), ball.scale(0, 0.3, easeInOutCubic)),
     ),
-    ...cherryShines.map(shine => shine.opacity(0, 0.25, easeInOutCubic)),
+    ...cherryShines.map((shine) => shine.opacity(0, 0.25, easeInOutCubic)),
     centers[1].opacity(0, 0.35, easeInOutCubic),
     centers[1].scale(0, 0.35, easeInOutCubic),
     centers[0].opacity(1, 0.35, easeOutCubic),
@@ -589,11 +555,8 @@ export default makeScene2D(function* (view) {
     rotatingCherry().opacity(1, 0.3, easeOutCubic),
     sequence(
       0.05,
-      ...centerCountLines.map(line =>
-        all(
-          line.end(1, 0.35, easeInOutCubic),
-          line.opacity(0.18, 0.35, easeOutCubic),
-        ),
+      ...centerCountLines.map((line) =>
+        all(line.end(1, 0.35, easeInOutCubic), line.opacity(0.18, 0.35, easeOutCubic)),
       ),
     ),
   );
@@ -623,7 +586,7 @@ export default makeScene2D(function* (view) {
     finalFormula().opacity(1, 0.25, easeOutCubic),
     sequence(
       0.16,
-      ...finalFormulaLines.map(line => line.opacity(1, 0.25, easeOutCubic)),
+      ...finalFormulaLines.map((line) => line.opacity(1, 0.25, easeOutCubic)),
     ),
   );
 
@@ -635,10 +598,7 @@ export default makeScene2D(function* (view) {
     lowerBoundFormula().opacity(1, 0.3, easeOutCubic),
   );
 
-  yield* all(
-    lowerBoundFormula().scale(1.08, 0.22, easeOutCubic),
-    upperBound().fill(palette.mutedInk, 0.22, easeOutCubic),
-  );
+  yield* all(lowerBoundFormula().scale(1.08, 0.22, easeOutCubic));
   yield* lowerBoundFormula().scale(1, 0.22, easeInOutCubic);
 
   yield* waitFor(0.25);
@@ -646,9 +606,8 @@ export default makeScene2D(function* (view) {
   yield* all(
     upperBound().position([145, -295], 0.5, easeInOutCubic),
     upperBound().scale(1, 0.5, easeInOutCubic),
-    upperBound().fill(palette.ink, 0.5, easeInOutCubic),
     upperBound().opacity(1, 0.35, easeOutCubic),
-    lowerBoundFormula().position([145, -235], 0.5, easeInOutCubic),
+    lowerBoundFormula().position([145, -205], 0.5, easeInOutCubic),
   );
 
   yield* waitFor(0.65);

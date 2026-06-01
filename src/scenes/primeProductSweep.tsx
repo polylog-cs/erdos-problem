@@ -1,4 +1,5 @@
-import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -7,9 +8,9 @@ import {
   makeRef,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
+import { PolyLatex } from '../utilities/latex';
 
 type Point = [number, number];
 type Sweep = {
@@ -92,20 +93,20 @@ function equationLhsFor([dx, dy]: Point) {
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
-  const product = createRef<Latex>();
-  const distanceLabel = createRef<Latex>();
-  const equationLhs = createRef<Latex>();
-  const equationRhs = createRef<Latex>();
-  const optimizeLine = createRef<Latex>();
-  const boundLine = createRef<Latex>();
-  const constructionLine = createRef<Latex>();
-  const constructionDetailLine = createRef<Latex>();
+  const product = createRef<PolyLatex>();
+  const distanceLabel = createRef<PolyLatex>();
+  const equationLhs = createRef<PolyLatex>();
+  const equationRhs = createRef<PolyLatex>();
+  const optimizeLine = createRef<PolyLatex>();
+  const boundLine = createRef<PolyLatex>();
+  const constructionLine = createRef<PolyLatex>();
+  const constructionDetailLine = createRef<PolyLatex>();
   const star = createRef<Node>();
   const center = createRef<Circle>();
   const active = createRef<Node>();
   const activeLine = createRef<Line>();
   const activeEnd = createRef<Circle>();
-  const sweeps: Sweep[] = sweepDistances.map(sweepDistance => ({
+  const sweeps: Sweep[] = sweepDistances.map((sweepDistance) => ({
     distance: sweepDistance,
     directions: pythagoreanDirections(sweepDistance),
     endpoints: [] as Circle[],
@@ -117,7 +118,7 @@ export default makeScene2D(function* (view) {
   view.add(
     <>
       <Node ref={star} x={-305} y={55} opacity={0}>
-        {sweeps.flatMap(sweep =>
+        {sweeps.flatMap((sweep) =>
           sweep.directions.map(([dx, dy], index) => (
             <Line
               ref={makeRef(sweep.rays, index)}
@@ -130,7 +131,7 @@ export default makeScene2D(function* (view) {
             />
           )),
         )}
-        {sweeps.flatMap(sweep =>
+        {sweeps.flatMap((sweep) =>
           sweep.directions.map(([dx, dy], index) => (
             <Circle
               ref={makeRef(sweep.endpoints, index)}
@@ -146,7 +147,10 @@ export default makeScene2D(function* (view) {
         <Node ref={active} opacity={0}>
           <Line
             ref={activeLine}
-            points={[[0, 0], [starRadius, 0]]}
+            points={[
+              [0, 0],
+              [starRadius, 0],
+            ]}
             stroke={colorFor(0, featuredSweep.directions.length)}
             lineWidth={5.6}
             lineCap={'round'}
@@ -169,7 +173,7 @@ export default makeScene2D(function* (view) {
           scale={0}
         />
       </Node>
-      <Latex
+      <PolyLatex
         ref={distanceLabel}
         x={-305}
         y={-360}
@@ -178,7 +182,7 @@ export default makeScene2D(function* (view) {
         fontSize={48}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={product}
         x={360}
         y={-295}
@@ -188,7 +192,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={equationLhs}
         x={560}
         y={-195}
@@ -198,7 +202,7 @@ export default makeScene2D(function* (view) {
         offsetX={1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={equationRhs}
         x={574}
         y={-195}
@@ -208,7 +212,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={optimizeLine}
         x={320}
         y={-120}
@@ -218,7 +222,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={boundLine}
         x={320}
         y={-58}
@@ -228,7 +232,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={constructionLine}
         x={320}
         y={10}
@@ -238,7 +242,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={constructionDetailLine}
         x={350}
         y={58}
@@ -271,9 +275,9 @@ export default makeScene2D(function* (view) {
 
   function* fadeSweepOut(sweep: Sweep) {
     yield* all(
-      ...sweep.rays.map(ray => ray.opacity(0, 0.24, easeInOutCubic)),
-      ...sweep.endpoints.map(endpoint => endpoint.opacity(0, 0.24, easeInOutCubic)),
-      ...sweep.endpoints.map(endpoint => endpoint.scale(0, 0.24, easeInOutCubic)),
+      ...sweep.rays.map((ray) => ray.opacity(0, 0.24, easeInOutCubic)),
+      ...sweep.endpoints.map((endpoint) => endpoint.opacity(0, 0.24, easeInOutCubic)),
+      ...sweep.endpoints.map((endpoint) => endpoint.scale(0, 0.24, easeInOutCubic)),
     );
     resetSweep(sweep);
   }
@@ -331,9 +335,9 @@ export default makeScene2D(function* (view) {
       product().opacity(1, 0.35, easeOutCubic),
       equationLhs().opacity(1, 0.35, easeOutCubic),
       equationRhs().opacity(1, 0.35, easeOutCubic),
-      ...sweep.rays.map(ray => ray.opacity(0.68, 0.35, easeOutCubic)),
-      ...sweep.endpoints.map(endpoint => endpoint.opacity(1, 0.25, easeOutCubic)),
-      ...sweep.endpoints.map(endpoint => endpoint.scale(1, 0.25, easeOutCubic)),
+      ...sweep.rays.map((ray) => ray.opacity(0.68, 0.35, easeOutCubic)),
+      ...sweep.endpoints.map((endpoint) => endpoint.opacity(1, 0.25, easeOutCubic)),
+      ...sweep.endpoints.map((endpoint) => endpoint.scale(1, 0.25, easeOutCubic)),
     );
   }
 

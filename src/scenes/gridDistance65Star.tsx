@@ -1,4 +1,4 @@
-import {createPythagoreanStarScene} from '../lib/pythagoreanGridScene';
+import { createPythagoreanStarScene } from '../lib/pythagoreanGridScene';
 
 export default createPythagoreanStarScene({
   distance: 65,

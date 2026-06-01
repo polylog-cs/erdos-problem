@@ -1,18 +1,20 @@
-import {Circle, Latex, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
   createSignal,
+  delay,
   easeInOutCubic,
   easeOutCubic,
   makeRef,
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
-import {playGridUnitScene} from '../lib/gridUnitScene';
+import { playGridUnitScene } from '../lib/gridUnitScene';
+import { palette } from '../lib/palette';
+import { PolyLatex } from '../utilities/latex';
 
 type PointName =
   | 'top'
@@ -104,20 +106,18 @@ export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
   const intro = createRef<Node>();
-  const caption = createRef<Latex>();
+  const caption = createRef<PolyLatex>();
   const ruler = createRef<Node>();
   const rulerLength = createSignal(260);
   const graphEdges: Line[] = [];
   const dots: Circle[] = [];
 
   view.add(
-    <Latex
+    <PolyLatex
       ref={caption}
       x={0}
       y={-430}
       tex={'\\mathrm{Unit\\ distance\\ problem}'}
-      fill={palette.ink}
-      fontSize={48}
       opacity={0}
     />,
   );
@@ -149,7 +149,7 @@ export default makeScene2D(function* (view) {
         ))}
       </Node>
 
-      <Node ref={ruler} y={-370} opacity={0} scale={0.82}>
+      <Node ref={ruler} y={-320} opacity={0} scale={0.82}>
         <Line
           points={[
             () => [-rulerLength() / 2, 0] as Point,
@@ -169,7 +169,7 @@ export default makeScene2D(function* (view) {
           lineWidth={4}
           lineCap={'round'}
         />
-        {[0, 0.25, 0.5, 0.75, 1].map(tick => (
+        {[0, 0.25, 0.5, 0.75, 1].map((tick) => (
           <Line
             points={[
               () => [(tick - 0.5) * rulerLength(), -16] as Point,
@@ -181,13 +181,7 @@ export default makeScene2D(function* (view) {
             opacity={tick === 0 || tick === 1 ? 0.75 : 0.45}
           />
         ))}
-        <Latex
-          tex={'1'}
-          y={-45}
-          fill={palette.ink}
-          fontSize={40}
-          opacity={0.9}
-        />
+        <PolyLatex tex={'1'} y={-45} fill={palette.ink} fontSize={40} opacity={0.9} />
       </Node>
     </Node>,
   );
@@ -196,13 +190,11 @@ export default makeScene2D(function* (view) {
     caption().opacity(1, 0.35, easeOutCubic),
     sequence(
       0.04,
-      ...pointNames.map(name =>
-        dots[pointIndex[name]].scale(1, 0.26, easeOutCubic),
-      ),
+      ...pointNames.map((name) => dots[pointIndex[name]].scale(1, 0.26, easeOutCubic)),
     ),
-    sequence(
-      0.035,
-      ...graphEdges.map(line => line.end(1, 0.45, easeInOutCubic)),
+    delay(
+      1,
+      sequence(0.035, ...graphEdges.map((line) => line.end(1, 0.45, easeInOutCubic))),
     ),
   );
 
@@ -216,7 +208,7 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.35);
 
   for (const [index, edge] of edges.entries()) {
-    const {angle, length, midpoint} = edgeGeometry(edge);
+    const { angle, length, midpoint } = edgeGeometry(edge);
     yield* all(
       ruler().position(midpoint, 0.28, easeInOutCubic),
       ruler().rotation(angle, 0.28, easeInOutCubic),
@@ -235,7 +227,7 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.25);
 
   yield* all(
-    ...graphEdges.map(line =>
+    ...graphEdges.map((line) =>
       all(
         line.stroke(palette.edge, 0.2),
         line.lineWidth(3.5, 0.2, easeInOutCubic),
@@ -244,7 +236,7 @@ export default makeScene2D(function* (view) {
     ),
     ruler().scale(1.05, 0.2, easeOutCubic),
   );
-  yield* ruler().scale(1, 0.2, easeInOutCubic);
+  //yield* ruler().scale(1, 0.2, easeInOutCubic);
 
   yield* waitFor(0.25);
 

@@ -1,4 +1,5 @@
-import {Circle, Img, Latex, Line, Node, Rect} from '@motion-canvas/2d';
+import { Circle, Img, Line, Node, Rect } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -8,9 +9,9 @@ import {
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
+import { PolyLatex } from '../utilities/latex';
 
 const imagePath = '/reference/island/latest-download-island.png';
 const gridIconLines: Array<Array<[number, number]>> = [
@@ -53,10 +54,10 @@ export default makeScene2D(function* (view) {
   const island = createRef<Node>();
   const islandGlow = createRef<Circle>();
   const islandOutline = createRef<Line>();
-  const leftLabel = createRef<Latex>();
-  const leftSub = createRef<Latex>();
-  const rightLabel = createRef<Latex>();
-  const rightSub = createRef<Latex>();
+  const leftLabel = createRef<PolyLatex>();
+  const leftSub = createRef<PolyLatex>();
+  const rightLabel = createRef<PolyLatex>();
+  const rightSub = createRef<PolyLatex>();
   const leftArrow = createRef<Line>();
   const rightArrow = createRef<Line>();
   const gridIcon = createRef<Node>();
@@ -65,13 +66,7 @@ export default makeScene2D(function* (view) {
 
   view.add(
     <>
-      <Img
-        ref={photo}
-        src={imagePath}
-        height={1080}
-        opacity={0}
-        scale={1.025}
-      />
+      <Img ref={photo} src={imagePath} height={1080} opacity={0} scale={1.025} />
 
       <Node ref={island} x={18} y={158} opacity={0}>
         <Circle
@@ -102,7 +97,7 @@ export default makeScene2D(function* (view) {
         />
       </Node>
 
-      <Latex
+      <PolyLatex
         ref={leftLabel}
         x={-850}
         y={-310}
@@ -112,7 +107,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={leftSub}
         x={-850}
         y={-246}
@@ -122,7 +117,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={rightLabel}
         x={420}
         y={-310}
@@ -132,7 +127,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Latex
+      <PolyLatex
         ref={rightSub}
         x={420}
         y={-246}
@@ -213,8 +208,8 @@ export default makeScene2D(function* (view) {
     leftArrow().opacity(1, 0.18, easeOutCubic),
     leftArrow().end(1, 0.65, easeInOutCubic),
     gridIcon().opacity(1, 0.24, easeOutCubic),
-    sequence(0.035, ...gridLines.map(line => line.end(1, 0.24, easeOutCubic))),
-    sequence(0.025, ...gridDots.map(dot => dot.scale(1, 0.2, easeOutCubic))),
+    sequence(0.035, ...gridLines.map((line) => line.end(1, 0.24, easeOutCubic))),
+    sequence(0.025, ...gridDots.map((dot) => dot.scale(1, 0.2, easeOutCubic))),
   );
 
   yield* waitFor(0.2);
