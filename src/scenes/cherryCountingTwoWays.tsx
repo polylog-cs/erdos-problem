@@ -176,7 +176,7 @@ export default makeScene2D(function* (view) {
   const cherryCircles: Circle[] = [];
 
   view.add(
-    <Node ref={graph} x={-385} y={15} scale={0.78}>
+    <Node ref={graph} x={-450} y={15} scale={0.78}>
       <Node ref={flatGraph}>
         {baseEdges.map(([from, to], index) => (
           <Line
@@ -399,21 +399,21 @@ export default makeScene2D(function* (view) {
     <PolyLatex
       ref={centerFormula}
       x={112}
-      y={138}
-      tex={
-        '\\#\\mathrm{cherries\\ around\\ }u\\ge\\binom{\\#\\mathrm{Neighbors}(u)}{2}\\approx\\#\\mathrm{Neighbors}(u)^2'
-      }
+      y={38}
+      tex={'\\#\\text{cherries around } u\\approx\\#\\text{buddies}(u)^2'}
       fontSize={22}
       offsetX={-1}
       opacity={0}
+      scale={1.7}
     />,
   );
 
   view.add(
-    <Node ref={finalFormula} x={112} y={190} opacity={0}>
+    <Node ref={finalFormula} x={112} y={60} opacity={0} scale={1.7}>
       {[
-        '\\#\\mathrm{cherries}\\ge\\sum_u\\#\\mathrm{Neighbors}(u)^2',
-        '\\ge n(\\mathrm{avg\\ neighbors})^2=n\\left({2m\\over n}\\right)^2={2m^2\\over n}',
+        '\\mkern 120mu\\Downarrow',
+        '\\#\\text{cherries total}\\approx\\sum_u\\#\\mathrm{buddies}(u)^2',
+        '\\llap{\\textit{\\scriptsize(Cauchy-Schwarz)}\\;\\;\\;}{\\ge{}} n\\left({2m\\over n}\\right)^2={2m^2\\over n}',
       ].map((tex, index) => (
         <PolyLatex
           ref={makeRef(finalFormulaLines, index)}
@@ -430,10 +430,10 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={lowerBoundFormula}
-      x={145}
+      x={105}
       y={265}
-      tex={'\\#\\mathrm{cherries}\\ge{2m^2\\over n}'}
-      fontSize={38}
+      tex={'2.\\;\\;\\;\\#\\mathrm{cherries}\\ge{2m^2\\over n}'}
+      fontSize={64}
       offsetX={-1}
       opacity={0}
     />,
@@ -442,10 +442,10 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={combinedFormula}
-      x={45}
-      y={40}
-      tex={'{2m^2\\over n}\\le 2n^2\\quad\\Longrightarrow\\quad m\\le n^{1.5}'}
-      fontSize={48}
+      x={170}
+      y={200}
+      tex={'\\Downarrow\\;\\;\\;\\\\m\\le n^{1.5}'}
+      fontSize={80}
       offsetX={-1}
       opacity={0}
     />,
@@ -454,9 +454,9 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={upperBound}
-      x={65}
+      x={25}
       y={282}
-      tex={'\\#\\mathrm{cherries}\\le 2n^2'}
+      tex={'1.\\;\\;\\;\\#\\mathrm{cherries}\\le 2n^2'}
       fontSize={64}
       offsetX={-1}
       opacity={0}
@@ -593,7 +593,6 @@ export default makeScene2D(function* (view) {
     centers[0].scale(1.42, 0.35, easeOutCubic),
     centers[0].fill(brown, 0.35, easeOutCubic),
     uLabel().opacity(1, 0.35, easeOutCubic),
-    centerFormula().opacity(1, 0.35, easeOutCubic),
   );
   yield* waitFor(1);
   cherryCircles[2].zIndex(-1);
@@ -631,45 +630,39 @@ export default makeScene2D(function* (view) {
   }
 
   yield* waitFor(0.25);
-
+  yield* centerFormula().opacity(1, 0.65, easeOutCubic);
   yield* all(
-    finalFormula().opacity(1, 0.25, easeOutCubic),
+    finalFormula().opacity(1, 0.65, easeOutCubic),
     sequence(
-      0.16,
-      ...finalFormulaLines.map((line) => line.opacity(1, 0.25, easeOutCubic)),
+      1,
+      ...finalFormulaLines.map((line) => line.opacity(1, 0.65, easeOutCubic)),
     ),
   );
 
   yield* waitFor(0.65);
 
   yield* all(
-    centerFormula().opacity(0, 0.3, easeInOutCubic),
-    finalFormula().opacity(0, 0.3, easeInOutCubic),
-    lowerBoundFormula().opacity(1, 0.3, easeOutCubic),
+    centerFormula().opacity(0, 0.6, easeInOutCubic),
+    finalFormula().opacity(0, 0.6, easeInOutCubic),
+    lowerBoundFormula().opacity(1, 0.6, easeOutCubic),
   );
-
-  yield* all(lowerBoundFormula().scale(1.08, 0.22, easeOutCubic));
-  yield* lowerBoundFormula().scale(1, 0.22, easeInOutCubic);
 
   yield* waitFor(0.25);
 
   yield* all(
-    upperBound().position([145, -295], 0.5, easeInOutCubic),
+    lowerBoundFormula().position([0, -40], 0.5, easeInOutCubic),
+    upperBound().position([0, -200], 0.5, easeInOutCubic),
     upperBound().scale(1, 0.5, easeInOutCubic),
     upperBound().opacity(1, 0.35, easeOutCubic),
-    lowerBoundFormula().position([145, -205], 0.5, easeInOutCubic),
   );
 
   yield* waitFor(0.65);
 
   yield* all(
-    upperBound().opacity(0, 0.35, easeInOutCubic),
-    lowerBoundFormula().opacity(0, 0.35, easeInOutCubic),
-    combinedFormula().opacity(1, 0.35, easeOutCubic),
+    //    upperBound().opacity(0, 0.35, easeInOutCubic),
+    //    lowerBoundFormula().opacity(0, 0.35, easeInOutCubic),
+    combinedFormula().opacity(1, 0.6, easeOutCubic),
   );
-
-  yield* combinedFormula().scale(1.06, 0.22, easeOutCubic);
-  yield* combinedFormula().scale(1, 0.22, easeInOutCubic);
 
   yield* waitFor(1.2);
 });
