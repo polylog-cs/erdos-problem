@@ -217,13 +217,14 @@ export default makeScene2D(function* (view) {
           >
             <PolyLatex
               ref={makeRef(firstLineLabels, index)}
-              tex="13"
+              tex="1"
               position={xy(from)
                 .add(xy(to))
                 .div(2)
-                .add(xy(from).sub(xy(to)).perpendicular.normalized.mul(-30))}
+                .add(xy(from).sub(xy(to)).perpendicular.normalized.mul(-50))}
               fill={green}
               opacity={0}
+              fontSize={80}
             />
           </Line>
         ))}
@@ -268,18 +269,18 @@ export default makeScene2D(function* (view) {
               />
               <Circle
                 x={centerStemLength}
-                size={50}
+                size={120}
                 fill={red}
                 stroke={redDark}
                 lineWidth={4}
               />
-              <Circle
+              {/* <Circle
                 x={centerStemLength - 11}
                 y={-13}
                 size={12}
                 fill={redLight}
                 opacity={0.9}
-              />
+              /> */}
             </Node>
           ))}
         </Node>
@@ -288,7 +289,7 @@ export default makeScene2D(function* (view) {
             ref={makeRef(cherryBalls, index)}
             x={points[name][0]}
             y={points[name][1]}
-            size={54}
+            size={120}
             fill={red}
             stroke={redDark}
             lineWidth={4}
@@ -299,7 +300,7 @@ export default makeScene2D(function* (view) {
               x={-11}
               y={-13}
               size={13}
-              fill={redLight}
+              fill={red}
               opacity={0}
             />
           </Circle>
@@ -375,14 +376,14 @@ export default makeScene2D(function* (view) {
               x={() => cherryCenter(phase, angle)[0] - 5}
               y={() => cherryCenter(phase, angle)[1] - 6}
               size={() => 5 + cherryDepth(phase, angle) * 5}
-              fill={'#c89a6a'}
+              fill={Solarized.orange}
               opacity={() => cherryDepth(phase, angle) * 0.7}
             />
           </Node>
         ))}
         {[threeLeft, threeRight].map(([x, y]) => (
           <Node>
-            <Circle x={x} y={y} size={64} fill={red} stroke={redDark} lineWidth={5} />
+            <Circle x={x} y={y} size={80} fill={red} stroke={redDark} lineWidth={5} />
             <Circle x={x - 13} y={y - 16} size={15} fill={redLight} />
           </Node>
         ))}
@@ -449,7 +450,7 @@ export default makeScene2D(function* (view) {
       ref={combinedFormula}
       x={170}
       y={200}
-      tex={'\\Downarrow\\;\\;\\;\\\\m\\le n^{1.5}'}
+      tex={'\\Rightarrow\\;\\;\\;\\\\m\\le n^{1.5}'}
       fontSize={80}
       offsetX={-1}
       opacity={0}
@@ -591,7 +592,7 @@ export default makeScene2D(function* (view) {
     centers[1].scale(0, 0.35, easeInOutCubic),
   );
 
-  yield* waitFor(2);
+  yield* waitFor(0.1);
 
   yield* all(
     centers[0].opacity(1, 0.35, easeOutCubic),

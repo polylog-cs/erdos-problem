@@ -1,4 +1,4 @@
-import { Circle, Node } from '@motion-canvas/2d';
+import { Circle, Layout, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
@@ -98,42 +98,40 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <PolyLatex
-        ref={optimizeLine}
-        x={320}
-        y={-120}
-        tex={'\\mathrm{if\\ you\\ optimize\\ for\\ general\\ }n:'}
-        fontSize={40}
+      <Layout
+        layout
+        direction={'column'}
+        alignItems={'start'}
+        gap={22}
+        x={150}
+        y={0}
         offsetX={-1}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={boundLine}
-        x={320}
-        y={-58}
-        tex={'n<n^{1+1/\\log\\log n}\\ll n^{1.001}'}
-        fontSize={35}
-        offsetX={-1}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={constructionLine}
-        x={320}
-        y={10}
-        tex={'\\Rightarrow\\ \\mathrm{probably\\ no\\ construction}'}
-        fontSize={28}
-        offsetX={-1}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={constructionDetailLine}
-        x={350}
-        y={58}
-        tex={'\\mathrm{with\\ }n^{1.0000001}\\mathrm{\\ edges}'}
-        fontSize={28}
-        offsetX={-1}
-        opacity={0}
-      />
+      >
+        <PolyLatex
+          ref={optimizeLine}
+          tex={'\\mathrm{if\\ you\\ optimize\\ for\\ general\\ }n:'}
+          fontSize={50}
+          opacity={0}
+        />
+        <PolyLatex
+          ref={boundLine}
+          tex={'n<n^{1+1/\\log\\log n}\\ll n^{1.001}'}
+          fontSize={50}
+          opacity={0}
+        />
+        <PolyLatex
+          ref={constructionLine}
+          tex={'\\Rightarrow\\ \\mathrm{probably\\ no\\ construction}'}
+          fontSize={50}
+          opacity={0}
+        />
+        <PolyLatex
+          ref={constructionDetailLine}
+          tex={'\\mathrm{with\\ }n^{1.0000001}\\mathrm{\\ edges}'}
+          fontSize={50}
+          opacity={0}
+        />
+      </Layout>
     </>,
   );
 
