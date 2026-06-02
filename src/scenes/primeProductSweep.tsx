@@ -103,7 +103,7 @@ export default makeScene2D(function* (view) {
         x={320}
         y={-120}
         tex={'\\mathrm{if\\ you\\ optimize\\ for\\ general\\ }n:'}
-        fontSize={30}
+        fontSize={40}
         offsetX={-1}
         opacity={0}
       />

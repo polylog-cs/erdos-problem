@@ -2,6 +2,7 @@ import { Circle, Line, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
+  Color,
   createRef,
   createSignal,
   easeInOutCubic,
@@ -14,6 +15,7 @@ import {
 } from '@motion-canvas/core';
 
 import { palette } from '../lib/palette';
+import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 import { PolyTxt } from '../utilities/text';
 
@@ -50,10 +52,10 @@ const points: Record<PointName, Point> = {
   left: [-190, 0],
   topLeftLeaf: [-220, -245],
   topRightLeaf: [220, -245],
-  rightLeaf: [405, -20],
+  rightLeaf: [410, -100],
   bottomRightLeaf: [220, 245],
   bottomLeftLeaf: [-220, 245],
-  leftLeaf: [-405, -20],
+  leftLeaf: [-410, -100],
 };
 
 const baseEdges: [PointName, PointName][] = [
@@ -110,14 +112,17 @@ const pointIndex = Object.fromEntries(
   pointNames.map((name, index) => [name, index]),
 ) as Record<PointName, number>;
 
-const red = '#c92932';
-const redDark = '#9f1f28';
-const redLight = '#f37b78';
-const green = '#258b4b';
-const greenLight = '#3fad65';
-const brown = '#80512b';
+const red = Solarized.red;
+const redDark = Solarized.red;
+const redLight = new Color(Solarized.red).brighten(0.5);
+const green = Solarized.green;
+const greenLight = new Color(Solarized.green).brighten(0.5);
+const brown = Solarized.base02;
 const centerStemLength = 245;
 const upperBoundDock: Point = [205, -350];
+
+const EDGE_WIDTH = 10;
+const POINT_SIZE = 30;
 
 function xy(name: PointName) {
   return new Vector2(points[name][0], points[name][1]);
@@ -183,7 +188,7 @@ export default makeScene2D(function* (view) {
             ref={makeRef(baseLines, index)}
             points={[xy(from), xy(to)]}
             stroke={palette.edge}
-            lineWidth={3}
+            lineWidth={EDGE_WIDTH}
             lineCap={'round'}
             end={0}
             opacity={0.5}
@@ -194,7 +199,7 @@ export default makeScene2D(function* (view) {
             ref={makeRef(baseDots, index)}
             x={points[name][0]}
             y={points[name][1]}
-            size={15}
+            size={POINT_SIZE}
             fill={palette.ink}
             scale={0}
             opacity={0.72}
@@ -210,9 +215,9 @@ export default makeScene2D(function* (view) {
             end={0}
             opacity={0}
           >
-            <PolyTxt
+            <PolyLatex
               ref={makeRef(firstLineLabels, index)}
-              text="1"
+              tex="13"
               position={xy(from)
                 .add(xy(to))
                 .div(2)

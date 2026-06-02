@@ -108,7 +108,7 @@ export function* playGridUnitScene(
           ref={makeRef(dots, index)}
           x={x}
           y={y}
-          size={8}
+          size={14}
           fill={palette.dot}
           scale={0}
         />

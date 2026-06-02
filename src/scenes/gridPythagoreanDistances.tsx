@@ -138,7 +138,7 @@ export default makeScene2D(function* (view) {
           ref={makeRef(smallDots, index)}
           x={x * smallStep}
           y={y * smallStep}
-          size={7}
+          size={14}
           fill={palette.dot}
           opacity={0.86}
           scale={0}
@@ -217,10 +217,7 @@ export default makeScene2D(function* (view) {
   yield* unitWheel.active().opacity(0, 0.18, easeInOutCubic);
   yield* waitFor(0.45);
 
-  yield* all(
-    unitLabel().opacity(0, 0.25, easeInOutCubic),
-    unitWheel.fadeOut(0.3),
-  );
+  yield* all(unitLabel().opacity(0, 0.25, easeInOutCubic), unitWheel.fadeOut(0.3));
 
   yield* waitFor(1);
 
@@ -252,10 +249,7 @@ export default makeScene2D(function* (view) {
   for (let index = 1; index < fiveWheel.directions.length; index++) {
     yield* all(
       fiveWheel.rotateArmTo(index, 0.36),
-      delay(
-        0.18,
-        fiveFormulaLhs().tex(equationLhsFor(fiveWheel.directions[index]), 0),
-      ),
+      delay(0.18, fiveFormulaLhs().tex(equationLhsFor(fiveWheel.directions[index]), 0)),
     );
     yield* fiveWheel.revealRay(index, { duration: 0.16, opacity: 0.9 });
     yield* waitFor(0.04);
@@ -294,7 +288,7 @@ export default makeScene2D(function* (view) {
   const denseCenter = createRef<Circle>();
   const denseStep = 5.5;
   const denseDotEvery = fullGridDotsEnabled() ? 1 : 10;
-  const denseDotSize = fullGridDotsEnabled() ? 1.4 : 3.3;
+  const denseDotSize = fullGridDotsEnabled() ? 3 : 5;
   const denseDotOpacity = fullGridDotsEnabled() ? 0.25 : 0.45;
 
   const sixtyFiveWheel = new RotatingWheel({

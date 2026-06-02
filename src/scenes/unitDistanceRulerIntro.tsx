@@ -14,6 +14,7 @@ import {
 
 import { playGridUnitScene } from '../lib/gridUnitScene';
 import { palette } from '../lib/palette';
+import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 
 type PointName =
@@ -49,10 +50,10 @@ const points: Record<PointName, Point> = {
   left: [-190, 0],
   topLeftLeaf: [-220, -245],
   topRightLeaf: [220, -245],
-  rightLeaf: [405, -20],
+  rightLeaf: [410, -100],
   bottomRightLeaf: [220, 245],
   bottomLeftLeaf: [-220, 245],
-  leftLeaf: [-405, -20],
+  leftLeaf: [-410, -100],
 };
 
 const edges: [PointName, PointName][] = [
@@ -102,6 +103,9 @@ function edgeGeometry([from, to]: [PointName, PointName]) {
   };
 }
 
+const EDGE_WIDTH = 10;
+const POINT_SIZE = 30;
+
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
@@ -119,6 +123,7 @@ export default makeScene2D(function* (view) {
       y={-430}
       tex={'\\mathrm{Unit\\ distance\\ problem}'}
       opacity={0}
+      fontSize={80}
     />,
   );
 
@@ -130,7 +135,7 @@ export default makeScene2D(function* (view) {
             ref={makeRef(graphEdges, index)}
             points={[xy(from), xy(to)]}
             stroke={palette.edge}
-            lineWidth={3.5}
+            lineWidth={EDGE_WIDTH}
             lineCap={'round'}
             end={0}
             opacity={0.52}
@@ -141,7 +146,7 @@ export default makeScene2D(function* (view) {
             ref={makeRef(dots, index)}
             x={points[name][0]}
             y={points[name][1]}
-            size={16}
+            size={POINT_SIZE}
             fill={palette.ink}
             opacity={0.75}
             scale={0}
@@ -155,7 +160,7 @@ export default makeScene2D(function* (view) {
             () => [-rulerLength() / 2, 0] as Point,
             () => [rulerLength() / 2, 0] as Point,
           ]}
-          stroke={'#f3cd62'}
+          stroke={Solarized.yellow}
           lineWidth={28}
           lineCap={'round'}
           opacity={0.52}
@@ -181,7 +186,7 @@ export default makeScene2D(function* (view) {
             opacity={tick === 0 || tick === 1 ? 0.75 : 0.45}
           />
         ))}
-        <PolyLatex tex={'1'} y={-45} fill={palette.ink} fontSize={40} opacity={0.9} />
+        <PolyLatex tex={'1'} y={-45} fill={palette.ink} fontSize={60} opacity={0.9} />
       </Node>
     </Node>,
   );
@@ -216,7 +221,11 @@ export default makeScene2D(function* (view) {
       ...graphEdges.map((line, edgeIndex) =>
         all(
           line.stroke(edgeIndex === index ? palette.accent : palette.edge, 0.18),
-          line.lineWidth(edgeIndex === index ? 7 : 3.5, 0.18, easeOutCubic),
+          line.lineWidth(
+            edgeIndex === index ? EDGE_WIDTH * 2 : EDGE_WIDTH,
+            0.18,
+            easeOutCubic,
+          ),
           line.opacity(edgeIndex === index ? 0.95 : 0.32, 0.18, easeOutCubic),
         ),
       ),
@@ -230,7 +239,7 @@ export default makeScene2D(function* (view) {
     ...graphEdges.map((line) =>
       all(
         line.stroke(palette.edge, 0.2),
-        line.lineWidth(3.5, 0.2, easeInOutCubic),
+        line.lineWidth(EDGE_WIDTH, 0.2, easeInOutCubic),
         line.opacity(0.52, 0.2, easeInOutCubic),
       ),
     ),

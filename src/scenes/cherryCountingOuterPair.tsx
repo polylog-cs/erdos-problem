@@ -1,4 +1,5 @@
-import {Circle, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   easeInOutCubic,
@@ -7,9 +8,9 @@ import {
   sequence,
   waitFor,
 } from '@motion-canvas/core';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
 
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
+import { Solarized } from '../utilities/color';
 
 type PointName =
   | 'top'
@@ -44,10 +45,10 @@ const points: Record<PointName, Point> = {
   left: [-190, 0],
   topLeftLeaf: [-100, -360],
   topRightLeaf: [185, -315],
-  rightLeaf: [420, -100],
+  rightLeaf: [405, -80],
   bottomRightLeaf: [100, 360],
   bottomLeftLeaf: [-100, 360],
-  leftLeaf: [-420, -100],
+  leftLeaf: [-405, -80],
 };
 
 const pointIndex = Object.fromEntries(
@@ -104,7 +105,7 @@ export default makeScene2D(function* (view) {
         <Line
           ref={makeRef(diamondLines, index)}
           points={[xy(from), xy(to)]}
-          stroke={'#248c4c'}
+          stroke={Solarized.green}
           lineWidth={8}
           lineCap={'round'}
           end={0}
@@ -126,29 +127,21 @@ export default makeScene2D(function* (view) {
 
   yield* sequence(
     0.05,
-    ...pointNames.map(name =>
-      nodes[pointIndex[name]].scale(1, 0.24, easeOutCubic),
-    ),
+    ...pointNames.map((name) => nodes[pointIndex[name]].scale(1, 0.24, easeOutCubic)),
   );
-  yield* sequence(
-    0.04,
-    ...baseLines.map(line => line.end(1, 0.42, easeInOutCubic)),
-  );
+  yield* sequence(0.04, ...baseLines.map((line) => line.end(1, 0.42, easeInOutCubic)));
 
   yield* waitFor(0.15);
 
   yield* sequence(
     0.08,
-    ...diamondLines.map(line =>
-      all(
-        line.opacity(1, 0.08, easeOutCubic),
-        line.end(1, 0.36, easeInOutCubic),
-      ),
+    ...diamondLines.map((line) =>
+      all(line.opacity(1, 0.08, easeOutCubic), line.end(1, 0.36, easeInOutCubic)),
     ),
   );
 
   yield* all(
-    ...outerPair.map(name =>
+    ...outerPair.map((name) =>
       all(
         nodes[pointIndex[name]].fill('#c92932', 0.22, easeOutCubic),
         nodes[pointIndex[name]].scale(1.65, 0.22, easeOutCubic),
@@ -156,8 +149,8 @@ export default makeScene2D(function* (view) {
     ),
   );
   yield* all(
-    ...outerPair.map(name => nodes[pointIndex[name]].scale(1.35, 0.2)),
-    ...centers.map(name =>
+    ...outerPair.map((name) => nodes[pointIndex[name]].scale(1.35, 0.2)),
+    ...centers.map((name) =>
       all(
         nodes[pointIndex[name]].fill('#8b572a', 0.24, easeOutCubic),
         nodes[pointIndex[name]].scale(1.45, 0.24, easeOutCubic),
@@ -166,13 +159,11 @@ export default makeScene2D(function* (view) {
   );
 
   yield* all(
-    ...outerPair.map(name =>
+    ...outerPair.map((name) =>
       nodes[pointIndex[name]].scale(1.2, 0.28, easeInOutCubic),
     ),
-    ...centers.map(name =>
-      nodes[pointIndex[name]].scale(1.2, 0.28, easeInOutCubic),
-    ),
-    ...diamondLines.map(line => line.lineWidth(6, 0.28, easeInOutCubic)),
+    ...centers.map((name) => nodes[pointIndex[name]].scale(1.2, 0.28, easeInOutCubic)),
+    ...diamondLines.map((line) => line.lineWidth(6, 0.28, easeInOutCubic)),
   );
 
   yield* waitFor(1.25);
