@@ -147,8 +147,8 @@ export default makeScene2D(function* (view) {
             x={points[name][0]}
             y={points[name][1]}
             size={POINT_SIZE}
-            fill={palette.ink}
-            opacity={0.75}
+            fill={palette.node}
+            opacity={1}
             scale={0}
           />
         ))}

@@ -200,9 +200,9 @@ export default makeScene2D(function* (view) {
             x={points[name][0]}
             y={points[name][1]}
             size={POINT_SIZE}
-            fill={palette.ink}
+            fill={palette.node}
             scale={0}
-            opacity={0.72}
+            opacity={1}
           />
         ))}
         {firstCherryEdges.map(([from, to], index) => (
@@ -377,14 +377,14 @@ export default makeScene2D(function* (view) {
               y={() => cherryCenter(phase, angle)[1] - 6}
               size={() => 5 + cherryDepth(phase, angle) * 5}
               fill={Solarized.orange}
-              opacity={() => cherryDepth(phase, angle) * 0.7}
+              opacity={() => 0 * cherryDepth(phase, angle) * 0.7}
             />
           </Node>
         ))}
         {[threeLeft, threeRight].map(([x, y]) => (
           <Node>
             <Circle x={x} y={y} size={80} fill={red} stroke={redDark} lineWidth={5} />
-            <Circle x={x - 13} y={y - 16} size={15} fill={redLight} />
+            <Circle x={x - 13} y={y - 16} size={15} fill={redLight} opacity={0} />
           </Node>
         ))}
       </Node>
@@ -495,7 +495,7 @@ export default makeScene2D(function* (view) {
 
   yield* all(
     ...cherryBalls.map((ball) => ball.scale(1, 0.45, easeOutCubic)),
-    ...cherryShines.map((shine) => shine.opacity(0.9, 0.35, easeOutCubic)),
+    ...cherryShines.map((shine) => shine.opacity(0 * 0.9, 0.35, easeOutCubic)),
     ...firstLines.map((line) => line.lineWidth(14, 0.35, easeOutCubic)),
     centers[0].scale(1.18, 0.35, easeOutCubic),
   );
@@ -601,7 +601,7 @@ export default makeScene2D(function* (view) {
     uLabel().opacity(1, 0.35, easeOutCubic),
   );
   yield* waitFor(1);
-  cherryCircles[2].zIndex(-1);
+  cherryCircles[2].zIndex(1);
   cherryCircles[2].stroke(redDark);
   yield* cherryCircles[2].end(1, 0.5);
   yield* waitFor(0.5);
