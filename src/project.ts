@@ -1,6 +1,8 @@
 import { makeProject } from '@motion-canvas/core';
 
+import asymptoticUnitDistanceTimeline from './scenes/asymptoticUnitDistanceTimeline?scene';
 import cherryCountingTwoWays from './scenes/cherryCountingTwoWays?scene';
+import cyclotomicPointsetSpiral from './scenes/cyclotomicPointsetSpiral?scene';
 import discreteGeometryAntIsland from './scenes/discreteGeometryAntIsland?scene';
 import gridPythagoreanDistances from './scenes/gridPythagoreanDistances?scene';
 import primeProductSweep from './scenes/primeProductSweep?scene';
@@ -14,5 +16,7 @@ export default makeProject({
     gridPythagoreanDistances,
     primeProductSweep,
     discreteGeometryAntIsland,
+    cyclotomicPointsetSpiral,
+    asymptoticUnitDistanceTimeline,
   ],
 });

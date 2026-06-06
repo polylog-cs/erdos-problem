@@ -23,6 +23,8 @@
     "src/scenes/cherryCountingTwoWays.tsx",
     "src/scenes/gridPythagoreanDistances.tsx",
     "src/scenes/primeProductSweep.tsx",
-    "src/scenes/discreteGeometryAntIsland.tsx"
+    "src/scenes/discreteGeometryAntIsland.tsx",
+    "src/scenes/cyclotomicPointsetSpiral.tsx",
+    "src/scenes/asymptoticUnitDistanceTimeline.tsx"
   ]
 }
