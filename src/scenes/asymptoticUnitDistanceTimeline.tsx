@@ -14,7 +14,7 @@ import {
 import openAiLogo from '../assets/images/logos/openai-logo.svg';
 import erdosPhoto from '../assets/images/people/erdos2.jpg';
 import { palette } from '../lib/palette';
-import { Solarized } from '../utilities/color';
+import { colorLerp, Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 
 type TickName = 'linear' | 'gpt' | 'threeHalves' | 'quadratic';
@@ -22,7 +22,7 @@ type TickName = 'linear' | 'gpt' | 'threeHalves' | 'quadratic';
 const axisY = 90;
 const tickX: Record<TickName, number> = {
   linear: -520,
-  gpt: -245,
+  gpt: -400,
   threeHalves: 125,
   quadratic: 520,
 };
@@ -112,6 +112,7 @@ export default makeScene2D(function* (view) {
         lineCap={'round'}
         opacity={0}
         end={0}
+        zIndex={1}
       />
       <Line
         ref={gptSegment}
@@ -119,11 +120,12 @@ export default makeScene2D(function* (view) {
           [tickX.linear, axisY],
           [tickX.gpt, axisY],
         ]}
-        stroke={Solarized.red}
+        stroke={Solarized.green}
         lineWidth={12}
         lineCap={'round'}
         opacity={0}
         end={0}
+        zIndex={1}
       />
       {(['linear', 'gpt', 'threeHalves', 'quadratic'] as TickName[]).map(
         (name, index) => (
@@ -138,6 +140,7 @@ export default makeScene2D(function* (view) {
             lineCap={'round'}
             opacity={name === 'gpt' || name === 'threeHalves' ? 0 : 1}
             scale={name === 'gpt' || name === 'threeHalves' ? 0 : 1}
+            zIndex={-1}
           />
         ),
       )}
@@ -145,9 +148,9 @@ export default makeScene2D(function* (view) {
         ref={(node) => {
           labels.linear = node;
         }}
-        tex={'n'}
+        tex={'\\;\\;n^{\\phantom1}'}
         x={tickX.linear}
-        y={axisY + 105}
+        y={axisY + 85}
         fontSize={100}
         opacity={0}
       />
@@ -155,7 +158,7 @@ export default makeScene2D(function* (view) {
         ref={(node) => {
           labels.gpt = node;
         }}
-        tex={'n^{1.014}'}
+        tex={'\\;\\;\\;\\;\\;\\;n^{1.014}'}
         x={tickX.gpt}
         y={axisY + 85}
         fontSize={100}
@@ -165,7 +168,7 @@ export default makeScene2D(function* (view) {
         ref={(node) => {
           labels.threeHalves = node;
         }}
-        tex={'n^{3/2}'}
+        tex={'\\;\\;\\;\\;n^{3/2}'}
         x={tickX.threeHalves}
         y={axisY + 85}
         fontSize={100}
@@ -175,7 +178,7 @@ export default makeScene2D(function* (view) {
         ref={(node) => {
           labels.quadratic = node;
         }}
-        tex={'n^2'}
+        tex={'\\;\\;n^2'}
         x={tickX.quadratic}
         y={axisY + 85}
         fontSize={100}
@@ -258,11 +261,13 @@ export default makeScene2D(function* (view) {
   );
   yield* waitFor(0.65);
 
+  const fainterRed = Solarized.red; //colorLerp(Solarized.red, Solarized.background, 0.42);
   yield* all(
     erdos().position([tickX.linear - 18, -220], 0.9, easeInOutCubic),
     erdos().scale(0.94, 0.9, easeInOutCubic),
     impossible().opacity(0, 0.25, easeInOutCubic),
-    impossibleSegment().opacity(0.42, 0.35, easeInOutCubic),
+    impossibleSegment().stroke(fainterRed, 0.35, easeInOutCubic),
+    //impossibleSegment().opacity(0.42, 0.35, easeInOutCubic),
   );
   yield* all(
     erdosBubble().opacity(1, 0.35, easeOutCubic),
