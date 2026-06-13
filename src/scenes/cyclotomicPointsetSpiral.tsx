@@ -5,72 +5,123 @@ import {
   createRef,
   createSignal,
   easeInOutCubic,
-  SimpleSignal,
+  easeOutCubic,
+  easeOutElastic,
+  linear,
   SignalValue,
+  SimpleSignal,
   waitFor,
 } from '@motion-canvas/core';
+import chroma from 'chroma-js';
 
-import {
-  CyclotomicPoint,
-  generateCyclotomicWindow,
-} from '../lib/cyclotomicWindow';
+import { CyclotomicPoint, generateCyclotomicWindow } from '../lib/cyclotomicWindow';
 import { palette } from '../lib/palette';
 import { Solarized } from '../utilities/color';
 
 const window21 = generateCyclotomicWindow(21, 44);
-const maxRadius = Math.max(...window21.points.map((point) => Math.hypot(point.x, point.y)));
+const maxRadius = Math.max(
+  ...window21.points.map((point) => Math.hypot(point.x, point.y)),
+);
 const centerOutPoints = [...window21.points].sort((a, b) => {
   const radiusA = Math.hypot(a.x, a.y);
   const radiusB = Math.hypot(b.x, b.y);
   return radiusA - radiusB || a.spiralProgress - b.spiralProgress || a.id - b.id;
 });
 
+// Inverse of easeInOutCubic: given an eased value y in [0, 1], return the
+// linear-time input x that produces it. Used to recover, in linear time, when
+// each point's reveal front passes it.
+function easeInOutCubicInverse(y: number): number {
+  if (y <= 0) return 0;
+  if (y >= 1) return 1;
+  if (y < 0.5) {
+    return Math.cbrt(y / 4);
+  }
+  return 1 - Math.cbrt(2 * (1 - y)) / 2;
+}
+
 interface CyclotomicPointCloudProps extends NodeProps {
   points: CyclotomicPoint[];
   unitScale?: SignalValue<number>;
   progress?: SignalValue<number>;
+  radius?: SignalValue<number>;
 }
 
 class CyclotomicPointCloud extends Node {
   public readonly unitScale: SimpleSignal<number, this>;
   public readonly progress: SimpleSignal<number, this>;
+  public readonly radius: SimpleSignal<number, this>;
 
   private readonly points: CyclotomicPoint[];
 
-  public constructor({ points, unitScale, progress, ...props }: CyclotomicPointCloudProps) {
+  public constructor({
+    points,
+    unitScale,
+    progress,
+    radius,
+    ...props
+  }: CyclotomicPointCloudProps) {
     super(props);
     this.points = points;
     this.unitScale = createSignal(unitScale ?? 1);
     this.progress = createSignal(progress ?? 0);
+    this.radius = createSignal(radius ?? 5);
   }
 
   protected override draw(context: CanvasRenderingContext2D) {
-    const progress = this.progress();
-    const scale = this.unitScale();
-    const visibleCount = Math.floor(this.points.length * progress);
-
     context.save();
-    this.drawPoints(context, visibleCount, scale);
+    this.drawPoints(context, this.progress(), this.unitScale(), this.radius());
     context.restore();
 
     this.drawChildren(context);
   }
 
-  private drawPoints(context: CanvasRenderingContext2D, count: number, scale: number) {
-    if (count <= 0) {
+  private drawPoints(
+    context: CanvasRenderingContext2D,
+    progress: number,
+    scale: number,
+    radius: number,
+  ) {
+    if (progress <= 0) {
       return;
     }
 
-    const radius = 2.25;
-    context.fillStyle = Solarized.base02;
-    context.globalAlpha = 0.84;
-    context.beginPath();
+    const total = this.points.length;
+    // `progress` advances linearly in time; we ease only the reveal *front* so
+    // the spatial reveal stays eased while each point's bounce — measured in
+    // linear time below — lasts a constant wall-clock duration.
+    const front = total * easeInOutCubic(progress);
+    const count = Math.min(Math.ceil(front), total);
+
+    // Bounce/fade durations as fractions of the (linear) progress, i.e.
+    // constant in wall-clock time regardless of where we are in the easing.
+    const bounceWindow = 0.02;
+    const baseRadius = radius;
+    const baseColor = chroma(Solarized.base02);
+    const highlightColor = chroma(palette.accent);
+
     for (let index = 0; index < count; index++) {
       const point = this.points[index];
-      context.moveTo(point.x * scale + radius, -point.y * scale);
-      context.arc(point.x * scale, -point.y * scale, radius, 0, 2 * Math.PI);
+      // The linear-time progress at which this point's reveal front passes it.
+      const appearProgress = easeInOutCubicInverse(index / total);
+      // age in linear-time units → bounce speed is independent of the easing.
+      const age = progress - appearProgress;
+      if (age <= 0) {
+        continue;
+      }
+      const t = Math.min(age / bounceWindow, 1);
+      const radius = baseRadius * easeOutElastic(t);
+      context.fillStyle = chroma.mix(highlightColor, baseColor, t, 'rgb').hex();
+      context.beginPath();
+      context.arc(
+        point.x * scale,
+        -point.y * scale,
+        Math.max(radius, 0.01),
+        0,
+        2 * Math.PI,
+      );
+      context.fill();
     }
-    context.fill();
   }
 }
 
@@ -83,14 +134,20 @@ export default makeScene2D(function* (view) {
     <CyclotomicPointCloud
       ref={cloud}
       points={centerOutPoints}
-      unitScale={1400}
+      unitScale={4000}
+      radius={10}
     />,
   );
 
+  const t = 60;
+
   yield* all(
-    cloud().progress(1, 10, easeInOutCubic),
-    cloud().unitScale(116, 10, easeInOutCubic),
-    cloud().position([0, 0], 10, easeInOutCubic),
+    // Linear in time: the reveal easing is applied inside draw() so that each
+    // point's bounce keeps a constant wall-clock duration.
+    cloud().progress(1, t, linear),
+    cloud().unitScale(250, t, easeOutCubic),
+    cloud().position([0, 0], t, easeInOutCubic),
+    cloud().radius(2, t, easeOutCubic),
   );
   yield* waitFor(0.8);
 });
