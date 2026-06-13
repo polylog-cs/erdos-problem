@@ -24,7 +24,6 @@ import {
   revealCardinalBuddies,
   revealSquareGrid,
   SquareGridVisual,
-  type Point,
 } from '../lib/unitDistanceGridVisual';
 import {Solarized} from '../utilities/color';
 import {PolyLatex} from '../utilities/latex';
@@ -34,8 +33,11 @@ const gridStep = 54;
 const gridSpan = gridExtent * 2 * gridStep;
 const axisY = 188;
 const linearExampleX = -430;
-const quadraticExampleX = 430;
 const exponentLabelY = axisY - 112;
+const tinyZeroStartX = -118;
+const tinyZeroGap = 21;
+const initialTinyZeroCount = 4;
+const totalTinyZeroCount = 10;
 
 function exponentX(exponent: number) {
   const t = exponent - 1;
@@ -46,14 +48,16 @@ function exponentX(exponent: number) {
   );
 }
 
-function scatterPoint(index: number, total: number): Point {
-  const angle = index * 2.399963229728653;
-  const radius = 80 + 250 * Math.sqrt((index + 0.5) / total);
+function tinyZeroX(index: number) {
+  return tinyZeroStartX + index * tinyZeroGap;
+}
 
-  return [
-    Math.cos(angle) * radius,
-    Math.sin(angle) * radius * 0.72,
-  ];
+function tinyTrailingOneX(zeroCount: number) {
+  return tinyZeroStartX + zeroCount * tinyZeroGap + 2;
+}
+
+function tinyPairsX(zeroCount: number) {
+  return tinyTrailingOneX(zeroCount) + 126;
 }
 
 export default makeScene2D(function* (view) {
@@ -70,7 +74,10 @@ export default makeScene2D(function* (view) {
   const erdosStage = createRef<Node>();
   const impossibleSegment = createRef<Line>();
   const impossibleLabel = createRef<PolyLatex>();
-  const tinyExponent = createRef<PolyLatex>();
+  const tinyExponent = createRef<Node>();
+  const tinyZeros: PolyLatex[] = [];
+  const tinyTrailingOne = createRef<PolyLatex>();
+  const tinyPairs = createRef<PolyLatex>();
   const braceLines: Line[] = [];
 
   view.add(
@@ -223,15 +230,43 @@ export default makeScene2D(function* (view) {
         fill={Solarized.red}
         opacity={0}
       />
-      <PolyLatex
+      <Node
         ref={tinyExponent}
-        tex={'n^{1.00001}\\text{ pairs}'}
         x={-270}
         y={axisY - 150}
-        fontSize={64}
-        fill={palette.ink}
         opacity={0}
-      />
+      >
+        <PolyLatex tex={'n'} x={-218} y={18} fontSize={84} fill={palette.ink} />
+        <PolyLatex tex={'1.'} x={-151} y={-25} fontSize={44} fill={palette.ink} />
+        {Array.from({length: totalTinyZeroCount}, (_, index) => (
+          <PolyLatex
+            ref={makeRef(tinyZeros, index)}
+            tex={'0'}
+            x={tinyZeroX(index)}
+            y={-25}
+            fontSize={44}
+            fill={palette.ink}
+            opacity={index < initialTinyZeroCount ? 1 : 0}
+            scale={index < initialTinyZeroCount ? 1 : 0}
+          />
+        ))}
+        <PolyLatex
+          ref={tinyTrailingOne}
+          tex={'1'}
+          x={tinyTrailingOneX(initialTinyZeroCount)}
+          y={-25}
+          fontSize={44}
+          fill={palette.ink}
+        />
+        <PolyLatex
+          ref={tinyPairs}
+          tex={'\\text{pairs}'}
+          x={tinyPairsX(initialTinyZeroCount)}
+          y={18}
+          fontSize={64}
+          fill={palette.ink}
+        />
+      </Node>
     </>,
   );
 
@@ -308,5 +343,23 @@ export default makeScene2D(function* (view) {
     delay(0.9, impossibleLabel().opacity(1, 0.45, easeOutCubic)),
     delay(1.55, tinyExponent().opacity(1, 0.45, easeOutCubic)),
   );
-  yield* waitFor(1.0);
+  yield* waitFor(0.35);
+
+  for (
+    let zeroCount = initialTinyZeroCount;
+    zeroCount < totalTinyZeroCount;
+    zeroCount++
+  ) {
+    const nextZeroCount = zeroCount + 1;
+
+    yield* all(
+      tinyZeros[zeroCount].opacity(1, 0.18, easeOutCubic),
+      tinyZeros[zeroCount].scale(1, 0.2, easeOutCubic),
+      tinyTrailingOne().x(tinyTrailingOneX(nextZeroCount), 0.28, easeInOutCubic),
+      tinyPairs().x(tinyPairsX(nextZeroCount), 0.28, easeInOutCubic),
+    );
+    yield* waitFor(0.06);
+  }
+
+  yield* waitFor(0.8);
 });
