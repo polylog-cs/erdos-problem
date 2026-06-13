@@ -4,7 +4,6 @@ import {
   all,
   createRef,
   createSignal,
-  delay,
   easeInOutCubic,
   easeOutCubic,
   makeRef,
@@ -105,12 +104,15 @@ function edgeGeometry([from, to]: [PointName, PointName]) {
 
 const EDGE_WIDTH = 10;
 const POINT_SIZE = 30;
+const RULER_VISIT_PASSES = 5;
+const RULER_MOVE_DURATION = 0.34;
+const RULER_HOLD_DURATION = 0.1;
 
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
   const intro = createRef<Node>();
-  const caption = createRef<PolyLatex>();
+  const problemStatement = createRef<PolyLatex>();
   const ruler = createRef<Node>();
   const rulerLength = createSignal(260);
   const graphEdges: Line[] = [];
@@ -118,17 +120,23 @@ export default makeScene2D(function* (view) {
 
   view.add(
     <PolyLatex
-      ref={caption}
+      ref={problemStatement}
       x={0}
-      y={-430}
-      tex={'\\mathrm{Unit\\ distance\\ problem}'}
-      opacity={0}
-      fontSize={80}
+      y={-40}
+      tex={
+        '\\begin{array}{c}' +
+        '\\mathrm{Place\\ } n \\mathrm{\\ points\\ in\\ the\\ plane}' +
+        '\\\\[0.45em]' +
+        '\\mathrm{to\\ maximize\\ unit\\ distances.}' +
+        '\\end{array}'
+      }
+      fontSize={58}
+      fill={palette.ink}
     />,
   );
 
   view.add(
-    <Node ref={intro} y={-20} scale={0.94}>
+    <Node ref={intro} y={-20} scale={0.94} opacity={0}>
       <Node>
         {edges.map(([from, to], index) => (
           <Line
@@ -191,19 +199,45 @@ export default makeScene2D(function* (view) {
     </Node>,
   );
 
-  yield* all(
-    caption().opacity(1, 0.35, easeOutCubic),
-    sequence(
-      0.04,
-      ...pointNames.map((name) => dots[pointIndex[name]].scale(1, 0.26, easeOutCubic)),
-    ),
-    delay(
-      1,
-      sequence(0.025, ...graphEdges.map((line) => line.end(1, 0.65, easeInOutCubic))),
-    ),
+  yield* problemStatement().write(1.15, easeInOutCubic);
+  yield* waitFor(0.7);
+  yield* problemStatement().unwrite(0.65, easeInOutCubic);
+  problemStatement().opacity(0);
+
+  yield* intro().opacity(1, 0.35, easeOutCubic);
+  yield* waitFor(0.15);
+
+  yield* sequence(
+    0.11,
+    ...pointNames.map((name) => dots[pointIndex[name]].scale(1, 0.28, easeOutCubic)),
   );
 
-  yield* waitFor(0.25);
+  yield* waitFor(0.3);
+
+  for (const [index, [from, to]] of edges.entries()) {
+    const fromDot = dots[pointIndex[from]];
+    const toDot = dots[pointIndex[to]];
+    const line = graphEdges[index];
+
+    yield* all(
+      line.opacity(0.86, 0.16, easeOutCubic),
+      line.lineWidth(EDGE_WIDTH * 1.25, 0.18, easeOutCubic),
+      line.end(1, 0.38, easeInOutCubic),
+      fromDot.scale(1.18, 0.16, easeOutCubic),
+      toDot.scale(1.18, 0.16, easeOutCubic),
+    );
+
+    yield* all(
+      line.lineWidth(EDGE_WIDTH, 0.18, easeInOutCubic),
+      line.opacity(0.52, 0.18, easeInOutCubic),
+      fromDot.scale(1, 0.18, easeInOutCubic),
+      toDot.scale(1, 0.18, easeInOutCubic),
+    );
+
+    yield* waitFor(0.04);
+  }
+
+  yield* waitFor(0.55);
 
   yield* all(
     ruler().opacity(1, 0.35, easeOutCubic),
@@ -212,25 +246,32 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.35);
 
-  for (const [index, edge] of edges.entries()) {
-    const { angle, length, midpoint } = edgeGeometry(edge);
-    yield* all(
-      ruler().position(midpoint, 0.28, easeInOutCubic),
-      ruler().rotation(angle, 0.28, easeInOutCubic),
-      rulerLength(length, 0.28, easeInOutCubic),
-      ...graphEdges.map((line, edgeIndex) =>
-        all(
-          line.stroke(edgeIndex === index ? palette.accent : palette.edge, 0.18),
-          line.lineWidth(
-            edgeIndex === index ? EDGE_WIDTH * 2 : EDGE_WIDTH,
-            0.18,
-            easeOutCubic,
+  for (let pass = 0; pass < RULER_VISIT_PASSES; pass++) {
+    const visitOrder =
+      pass % 2 === 0
+        ? edges.map((edge, index) => ({ edge, index }))
+        : edges.map((edge, index) => ({ edge, index })).reverse();
+
+    for (const { edge, index } of visitOrder) {
+      const { angle, length, midpoint } = edgeGeometry(edge);
+      yield* all(
+        ruler().position(midpoint, RULER_MOVE_DURATION, easeInOutCubic),
+        ruler().rotation(angle, RULER_MOVE_DURATION, easeInOutCubic),
+        rulerLength(length, RULER_MOVE_DURATION, easeInOutCubic),
+        ...graphEdges.map((line, edgeIndex) =>
+          all(
+            line.stroke(edgeIndex === index ? palette.accent : palette.edge, 0.18),
+            line.lineWidth(
+              edgeIndex === index ? EDGE_WIDTH * 2 : EDGE_WIDTH,
+              0.18,
+              easeOutCubic,
+            ),
+            line.opacity(edgeIndex === index ? 0.95 : 0.32, 0.18, easeOutCubic),
           ),
-          line.opacity(edgeIndex === index ? 0.95 : 0.32, 0.18, easeOutCubic),
         ),
-      ),
-    );
-    yield* waitFor(0.08);
+      );
+      yield* waitFor(RULER_HOLD_DURATION);
+    }
   }
 
   yield* waitFor(0.25);

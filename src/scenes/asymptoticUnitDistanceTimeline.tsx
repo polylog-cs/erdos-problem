@@ -6,26 +6,22 @@ import {
   delay,
   easeInOutCubic,
   easeOutCubic,
-  makeRef,
   sequence,
   waitFor,
 } from '@motion-canvas/core';
 
 import openAiLogo from '../assets/images/logos/openai-logo.svg';
 import erdosPhoto from '../assets/images/people/erdos2.jpg';
+import {
+  createGrowthAxisRefs,
+  GrowthAxis,
+  growthAxisTickX as tickX,
+} from '../lib/unitDistanceGrowthAxis';
 import { palette } from '../lib/palette';
-import { colorLerp, Solarized } from '../utilities/color';
+import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 
-type TickName = 'linear' | 'gpt' | 'threeHalves' | 'quadratic';
-
 const axisY = 90;
-const tickX: Record<TickName, number> = {
-  linear: -520,
-  gpt: -400,
-  threeHalves: 125,
-  quadratic: 520,
-};
 
 function bubble(
   text: string,
@@ -77,7 +73,7 @@ function bubble(
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
-  const axis = createRef<Line>();
+  const growthAxis = createGrowthAxisRefs();
   const impossibleSegment = createRef<Line>();
   const gptSegment = createRef<Line>();
   const impossible = createRef<PolyLatex>();
@@ -85,21 +81,25 @@ export default makeScene2D(function* (view) {
   const erdosBubble = createRef<Node>();
   const gpt = createRef<Node>();
   const gptBubble = createRef<Node>();
-  const ticks: Line[] = [];
-  const labels: Partial<Record<TickName, PolyLatex>> = {};
 
   view.add(
     <>
-      <Line
-        ref={axis}
-        points={[
-          [tickX.linear, axisY],
-          [tickX.quadratic, axisY],
-        ]}
-        stroke={Solarized.base00}
-        lineWidth={5}
-        lineCap={'round'}
-        end={0}
+      <GrowthAxis
+        refs={growthAxis}
+        y={axisY}
+        initialVisibleTicks={['linear', 'quadratic']}
+        labelOffset={{
+          linear: 105,
+          gpt: 85,
+          threeHalves: 85,
+          quadratic: 85,
+        }}
+        labelTex={{
+          linear: '\\;\\;n^{\\phantom1}',
+          gpt: '\\;\\;\\;\\;\\;\\;n^{1.014}',
+          threeHalves: '\\;\\;\\;\\;n^{3/2}',
+          quadratic: '\\;\\;n^2',
+        }}
       />
       <Line
         ref={impossibleSegment}
@@ -127,64 +127,6 @@ export default makeScene2D(function* (view) {
         end={0}
         zIndex={1}
       />
-      {(['linear', 'gpt', 'threeHalves', 'quadratic'] as TickName[]).map(
-        (name, index) => (
-          <Line
-            ref={makeRef(ticks, index)}
-            points={[
-              [tickX[name], axisY - 26],
-              [tickX[name], axisY + 26],
-            ]}
-            stroke={Solarized.base00}
-            lineWidth={4}
-            lineCap={'round'}
-            opacity={name === 'gpt' || name === 'threeHalves' ? 0 : 1}
-            scale={name === 'gpt' || name === 'threeHalves' ? 0 : 1}
-            zIndex={-1}
-          />
-        ),
-      )}
-      <PolyLatex
-        ref={(node) => {
-          labels.linear = node;
-        }}
-        tex={'\\;\\;n^{\\phantom1}'}
-        x={tickX.linear}
-        y={axisY + 85}
-        fontSize={100}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={(node) => {
-          labels.gpt = node;
-        }}
-        tex={'\\;\\;\\;\\;\\;\\;n^{1.014}'}
-        x={tickX.gpt}
-        y={axisY + 85}
-        fontSize={100}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={(node) => {
-          labels.threeHalves = node;
-        }}
-        tex={'\\;\\;\\;\\;n^{3/2}'}
-        x={tickX.threeHalves}
-        y={axisY + 85}
-        fontSize={100}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={(node) => {
-          labels.quadratic = node;
-        }}
-        tex={'\\;\\;n^2'}
-        x={tickX.quadratic}
-        y={axisY + 85}
-        fontSize={100}
-        opacity={0}
-      />
-
       <Node ref={erdos} x={305} y={-225} opacity={0} scale={0.85}>
         <Img
           src={erdosPhoto}
@@ -239,16 +181,16 @@ export default makeScene2D(function* (view) {
   );
 
   yield* all(
-    axis().end(1, 0.8, easeInOutCubic),
-    delay(0.2, labels.linear!.opacity(1, 0.35, easeOutCubic)),
-    delay(0.2, labels.quadratic!.opacity(1, 0.35, easeOutCubic)),
+    growthAxis.axis().end(1, 0.8, easeInOutCubic),
+    delay(0.2, growthAxis.labels.linear().opacity(1, 0.35, easeOutCubic)),
+    delay(0.2, growthAxis.labels.quadratic().opacity(1, 0.35, easeOutCubic)),
   );
   yield* waitFor(0.35);
 
   yield* all(
-    ticks[2].opacity(1, 0.25, easeOutCubic),
-    ticks[2].scale(1, 0.25, easeOutCubic),
-    labels.threeHalves!.opacity(1, 0.35, easeOutCubic),
+    growthAxis.ticks.threeHalves().opacity(1, 0.25, easeOutCubic),
+    growthAxis.ticks.threeHalves().scale(1, 0.25, easeOutCubic),
+    growthAxis.labels.threeHalves().opacity(1, 0.35, easeOutCubic),
     erdos().opacity(1, 0.45, easeOutCubic),
     erdos().scale(1, 0.45, easeOutCubic),
   );
@@ -280,9 +222,9 @@ export default makeScene2D(function* (view) {
     erdosBubble().scale(0.92, 0.22, easeInOutCubic),
     erdos().opacity(0, 0.25, easeInOutCubic),
     erdos().scale(0.82, 0.25, easeInOutCubic),
-    ticks[1].opacity(1, 0.25, easeOutCubic),
-    ticks[1].scale(1, 0.25, easeOutCubic),
-    labels.gpt!.opacity(1, 0.35, easeOutCubic),
+    growthAxis.ticks.gpt().opacity(1, 0.25, easeOutCubic),
+    growthAxis.ticks.gpt().scale(1, 0.25, easeOutCubic),
+    growthAxis.labels.gpt().opacity(1, 0.35, easeOutCubic),
     gpt().opacity(1, 0.4, easeOutCubic),
     gpt().scale(1, 0.4, easeOutCubic),
   );
