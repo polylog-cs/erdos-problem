@@ -1,4 +1,4 @@
-import { Node, Rect } from '@motion-canvas/2d';
+import { Img, Node, Rect } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
@@ -13,6 +13,7 @@ import {
   ergr80Problems,
   type ErdosProblemCard,
 } from '../data/ergr80Problems';
+import erdosPortrait from '../assets/images/people/paul-erdos-vitalyos.jpg';
 import { PolyLatex } from '../utilities/latex';
 import { PolyTxt } from '../utilities/text';
 
@@ -25,9 +26,10 @@ const solvedStroke = '#23864D';
 const openTint = '#FBE7E3';
 const solvedTint = '#E4F2E8';
 
-const viewportWidth = 1580;
+const contentCenterX = -320;
+const viewportWidth = 1220;
 const viewportHeight = 850;
-const cardWidth = 1450;
+const cardWidth = 1120;
 const cardGap = 24;
 const headerHeight = 86;
 const horizontalPadding = 54;
@@ -35,7 +37,12 @@ const textWidth = cardWidth - 2 * horizontalPadding;
 const slotCount = 7;
 const viewTop = -viewportHeight / 2 + 18;
 const scrollPixelsPerSecond = 220;
+const introHeight = 920;
+const introGap = 40;
+const introScrollPixelsPerSecond = 300;
+const introStartOffsetY = -60;
 const focusProblemId = 90;
+const focusTargetY = 80;
 const focusScrollPixelsPerSecond = 820;
 
 type InlineSegment = {
@@ -427,6 +434,7 @@ export default makeScene2D(function* (view) {
 
   const stage = createRef<Node>();
   const list = createRef<Node>();
+  const intro = createRef<Node>();
   const cardSlots: CardSlotRefs[] = Array.from({ length: slotCount }, () => ({
     root: createRef<Rect>(),
     bar: createRef<Rect>(),
@@ -472,7 +480,7 @@ export default makeScene2D(function* (view) {
 
   function layoutInitialSlots() {
     let nextProblemIndex = 0;
-    let top = viewTop;
+    let top = viewTop + introHeight + introGap;
 
     for (let slotIndex = 0; slotIndex < slotCount; slotIndex++) {
       const prepared = preparedProblems[nextProblemIndex++];
@@ -486,14 +494,8 @@ export default makeScene2D(function* (view) {
 
   view.add(
     <Node ref={stage} opacity={0}>
-      <PolyTxt
-        text={'Some Erd\u0151s problems'}
-        y={-492}
-        fontSize={50}
-        fontWeight={700}
-        fill={ink}
-      />
       <Rect
+        x={contentCenterX}
         y={40}
         width={viewportWidth}
         height={viewportHeight}
@@ -501,6 +503,31 @@ export default makeScene2D(function* (view) {
         fill={paper}
       >
         <Node ref={list}>
+          <Node ref={intro} y={viewTop + introHeight / 2 + introStartOffsetY}>
+            <PolyTxt
+              text={'Paul Erd\u0151s'}
+              y={-370}
+              fontSize={70}
+              fontWeight={700}
+              fill={ink}
+            />
+            <PolyTxt
+              text={'1913 - 1996'}
+              y={-300}
+              fontSize={44}
+              fontWeight={500}
+              fill={ink}
+            />
+            <Img
+              src={erdosPortrait}
+              y={95}
+              width={560}
+              height={750}
+              radius={10}
+              stroke={rule}
+              lineWidth={3}
+            />
+          </Node>
           {cardSlots.map((refs, index) => (
             <CardSlot
               index={index}
@@ -517,7 +544,25 @@ export default makeScene2D(function* (view) {
   const slotOrder = cardSlots.map((_, index) => index);
 
   yield* stage().opacity(1, 0.45, easeOutCubic);
-  yield* waitFor(1.25);
+  yield* waitFor(0.75);
+
+  const introDy = introHeight + introGap;
+  yield* all(
+    intro().y(
+      intro().y() - introDy,
+      introDy / introScrollPixelsPerSecond,
+      linear,
+    ),
+    ...slotOrder.map((slotIndex) =>
+      cardSlots[slotIndex].root().y(
+        cardSlots[slotIndex].root().y() - introDy,
+        introDy / introScrollPixelsPerSecond,
+        linear,
+      ),
+    ),
+  );
+
+  yield* waitFor(0.25);
 
   while (nextProblemIndex < preparedProblems.length) {
     const firstSlot = slotOrder[0];
@@ -590,7 +635,7 @@ export default makeScene2D(function* (view) {
   const focusSlot = slotOrder.find(
     (slotIndex) => slotPrepared[slotIndex].problem.id === focusProblemId,
   )!;
-  const centerDy = -cardSlots[focusSlot].root().y();
+  const centerDy = focusTargetY - cardSlots[focusSlot].root().y();
   const centerDuration = Math.max(
     0.18,
     Math.abs(centerDy) / focusScrollPixelsPerSecond,
