@@ -181,12 +181,7 @@ export default makeScene2D(function* (view) {
         {unitWheel.view}
         {fiveWheel.view}
       </Node>
-      <Node
-        ref={rescaleRuler}
-        x={squareGridExtent * smallStep + 140}
-        y={0}
-        opacity={0}
-      >
+      <Node ref={rescaleRuler} x={squareGridExtent * smallStep + 140} y={0} opacity={0}>
         <Line
           points={[
             [-rescaleRulerLength / 2, 0],
@@ -222,7 +217,7 @@ export default makeScene2D(function* (view) {
           ref={rescaleRulerLabel}
           tex={'5'}
           y={-52}
-          fill={palette.ink}
+          fill={palette.text}
           fontSize={54}
           opacity={0.92}
         />

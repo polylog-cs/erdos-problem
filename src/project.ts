@@ -1,5 +1,6 @@
 import { makeProject } from '@motion-canvas/core';
 
+import asymptoticPushExponent from './scenes/asymptoticPushExponent?scene';
 import asymptoticUnitDistanceTimeline from './scenes/asymptoticUnitDistanceTimeline?scene';
 import cherryCountingTwoWays from './scenes/cherryCountingTwoWays?scene';
 import cyclotomicPointsetSpiral from './scenes/cyclotomicPointsetSpiral?scene';
@@ -22,6 +23,7 @@ export default makeProject({
     primeProductSweep,
     discreteGeometryAntIsland,
     cyclotomicPointsetSpiral,
+    asymptoticPushExponent,
     asymptoticUnitDistanceTimeline,
     waterlineMathAbility,
   ],

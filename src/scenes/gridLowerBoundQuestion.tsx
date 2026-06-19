@@ -1,5 +1,5 @@
-import {Img, Line, Node} from '@motion-canvas/2d';
-import {makeScene2D} from '@motion-canvas/2d/lib/scenes';
+import { Img, Line, Node } from '@motion-canvas/2d';
+import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
   createRef,
@@ -14,20 +14,20 @@ import {
 } from '@motion-canvas/core';
 
 import erdosPhoto from '../assets/images/people/erdos2.jpg';
-import {
-  createGrowthAxisRefs,
-  GrowthAxis,
-  growthAxisTickX,
-} from '../lib/unitDistanceGrowthAxis';
-import {palette} from '../lib/palette';
+import { palette } from '../lib/palette';
 import {
   createSquareGridVisualRefs,
   revealSquareGrid,
   SquareGridVisual,
 } from '../lib/unitDistanceGridVisual';
-import {Solarized} from '../utilities/color';
-import {PolyLatex} from '../utilities/latex';
-import {PolyTxt} from '../utilities/text';
+import {
+  createGrowthAxisRefs,
+  GrowthAxis,
+  growthAxisTickX,
+} from '../lib/unitDistanceGrowthAxis';
+import { Solarized } from '../utilities/color';
+import { PolyLatex } from '../utilities/latex';
+import { PolyTxt } from '../utilities/text';
 
 const gridExtent = 4;
 const gridStep = 54;
@@ -52,20 +52,20 @@ const impossibleRegularExponentDuration = impossibleDescentDuration / 2;
 const impossibleTinyExponentDuration =
   impossibleDescentDuration - impossibleRegularExponentDuration;
 const cardinalNarrationOrder = ['N', 'W', 'E', 'S'] as const;
-const cardinalBuddyIndex = {N: 0, E: 1, W: 2, S: 3};
+const cardinalBuddyIndex = { N: 0, E: 1, W: 2, S: 3 };
 type Point = [number, number];
 
 const insanePointRings = [
-  {count: 1, radius: 0, phase: 0},
-  {count: 12, radius: 72, phase: 0.08},
-  {count: 20, radius: 132, phase: 0.22},
-  {count: 24, radius: 196, phase: 0.04},
-  {count: 24, radius: 260, phase: 0.16},
+  { count: 1, radius: 0, phase: 0 },
+  { count: 12, radius: 72, phase: 0.08 },
+  { count: 20, radius: 132, phase: 0.22 },
+  { count: 24, radius: 196, phase: 0.04 },
+  { count: 24, radius: 260, phase: 0.16 },
 ];
 
 function createInsanePointset(): Point[] {
-  return insanePointRings.flatMap(({count, radius, phase}, ringIndex) =>
-    Array.from({length: count}, (_, index) => {
+  return insanePointRings.flatMap(({ count, radius, phase }, ringIndex) =>
+    Array.from({ length: count }, (_, index) => {
       if (radius === 0) {
         return [0, 0] as Point;
       }
@@ -83,7 +83,7 @@ function createInsanePointset(): Point[] {
 
 function createInsanePairEdges(points: Point[]) {
   const targetLengths = [72, 118, 150];
-  const candidates: Array<{from: number; to: number; score: number}> = [];
+  const candidates: Array<{ from: number; to: number; score: number }> = [];
 
   for (let from = 0; from < points.length; from++) {
     for (let to = from + 1; to < points.length; to++) {
@@ -96,15 +96,15 @@ function createInsanePairEdges(points: Point[]) {
       );
 
       if (score < 8) {
-        candidates.push({from, to, score});
+        candidates.push({ from, to, score });
       }
     }
   }
 
-  const degrees = Array.from({length: points.length}, () => 0);
+  const degrees = Array.from({ length: points.length }, () => 0);
   const edges: Array<[number, number]> = [];
 
-  for (const {from, to} of candidates.sort((a, b) => a.score - b.score)) {
+  for (const { from, to } of candidates.sort((a, b) => a.score - b.score)) {
     if (degrees[from] >= 7 || degrees[to] >= 7) {
       continue;
     }
@@ -128,8 +128,7 @@ function exponentX(exponent: number) {
   const t = exponent - 1;
 
   return (
-    growthAxisTickX.linear +
-    t * (growthAxisTickX.quadratic - growthAxisTickX.linear)
+    growthAxisTickX.linear + t * (growthAxisTickX.quadratic - growthAxisTickX.linear)
   );
 }
 
@@ -145,11 +144,7 @@ function impossibleExponentText(zeroCount: number) {
   return `1.${'0'.repeat(Math.max(0, Math.round(zeroCount)))}1`;
 }
 
-function exponentText(
-  exponent: number,
-  impossibleMode: number,
-  zeroCount: number,
-) {
+function exponentText(exponent: number, impossibleMode: number, zeroCount: number) {
   if (impossibleMode > 0.5) {
     return impossibleExponentText(zeroCount);
   }
@@ -287,13 +282,13 @@ export default makeScene2D(function* (view) {
             tex={'\\sqrt n'}
             y={-gridSpan / 2 - 116}
             fontSize={52}
-            fill={palette.ink}
+            fill={palette.text}
           />
           <PolyLatex
             tex={'\\sqrt n'}
             x={-gridSpan / 2 - 128}
             fontSize={52}
-            fill={palette.ink}
+            fill={palette.text}
           />
         </Node>
       </Node>
@@ -304,7 +299,7 @@ export default makeScene2D(function* (view) {
         x={growthAxisTickX.linear}
         y={-24}
         fontSize={56}
-        fill={palette.ink}
+        fill={palette.text}
         opacity={0}
       />
       <Node ref={countPointer} x={() => sweepX()} y={axisY} opacity={0}>
@@ -342,13 +337,13 @@ export default makeScene2D(function* (view) {
       />
 
       <Node ref={movingCountLabel} x={() => sweepX()} y={-24} opacity={0}>
-        <PolyLatex tex={'n'} x={-141} y={13} fontSize={70} fill={palette.ink} />
+        <PolyLatex tex={'n'} x={-141} y={13} fontSize={70} fill={palette.text} />
         <PolyTxt
           text={movingExponentText}
           x={-94}
           y={-35}
           fontSize={34}
-          fill={palette.ink}
+          fill={palette.text}
           offsetX={-1}
         />
         <PolyLatex
@@ -356,22 +351,12 @@ export default makeScene2D(function* (view) {
           x={() => suffixX(movingExponentText())}
           y={13}
           fontSize={56}
-          fill={palette.ink}
+          fill={palette.text}
         />
       </Node>
 
-      <Node
-        ref={erdosStage}
-        x={() => pointsetX()}
-        y={-250}
-        opacity={0}
-      >
-        <Img
-          src={erdosPhoto}
-          width={292}
-          height={322}
-          radius={10}
-        />
+      <Node ref={erdosStage} x={() => pointsetX()} y={-250} opacity={0}>
+        <Img src={erdosPhoto} width={292} height={322} radius={10} />
       </Node>
       <Line
         ref={impossibleSegment}
@@ -413,9 +398,7 @@ export default makeScene2D(function* (view) {
     pointsetX(linearExampleX, 0.75, easeInOutCubic),
     gridStage().y(-202, 0.75, easeInOutCubic),
     gridStage().scale(0.42, 0.75, easeInOutCubic),
-    ...grid.gridLines.map((line) =>
-      line.stroke(palette.accent, 0.45, easeInOutCubic),
-    ),
+    ...grid.gridLines.map((line) => line.stroke(palette.accent, 0.45, easeInOutCubic)),
     braceGroup().opacity(0, 0.35, easeInOutCubic),
     ...grid.buddyLabels.map((label) => label.opacity(0, 0.35, easeInOutCubic)),
   );
@@ -451,10 +434,7 @@ export default makeScene2D(function* (view) {
       ),
     ),
     delay(0.15, insaneLayer().opacity(1, 0.45, easeOutCubic)),
-    delay(
-      0.2,
-      all(...insaneLines.map((line) => line.end(1, 0.65, easeInOutCubic))),
-    ),
+    delay(0.2, all(...insaneLines.map((line) => line.end(1, 0.65, easeInOutCubic)))),
     countLabel().opacity(0, 0.28, easeInOutCubic),
     movingCountLabel().opacity(1, 0.3, easeOutCubic),
   );

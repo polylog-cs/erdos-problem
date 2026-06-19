@@ -576,7 +576,7 @@ export default makeScene2D(function* (view) {
             opacity={tick === 0 || tick === 1 ? 0.75 : 0.45}
           />
         ))}
-        <PolyLatex tex={'1'} y={-45} fill={palette.ink} fontSize={60} opacity={0.9} />
+        <PolyLatex tex={'1'} y={-45} fill={palette.text} fontSize={60} opacity={0.9} />
       </Node>
     </Node>,
   );
@@ -586,16 +586,16 @@ export default makeScene2D(function* (view) {
       <PolyLatex
         x={2}
         tex={'\\#\\mathrm{\\ pairs}='}
-        fontSize={46}
-        fill={palette.ink}
+        fontSize={80}
+        fill={palette.text}
         offsetX={1}
       />
       <PolyLatex
         ref={pairCountNumber}
         x={18}
         tex={pairNumberText(edges.length)}
-        fontSize={46}
-        fill={palette.ink}
+        fontSize={80}
+        fill={palette.text}
         offsetX={-1}
       />
     </Node>,

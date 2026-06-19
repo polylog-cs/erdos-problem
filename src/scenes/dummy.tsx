@@ -12,7 +12,7 @@ export default makeScene2D(function* (view) {
     <Txt
       y={170}
       text={'dummy animation'}
-      fill={palette.ink}
+      fill={palette.text}
       fontFamily={'Inter, Arial, sans-serif'}
       fontSize={48}
       fontWeight={600}

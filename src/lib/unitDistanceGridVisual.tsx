@@ -1,4 +1,4 @@
-import {Circle, Line, Node} from '@motion-canvas/2d';
+import { Circle, Line, Node } from '@motion-canvas/2d';
 import {
   all,
   createRef,
@@ -9,8 +9,8 @@ import {
   type Reference,
 } from '@motion-canvas/core';
 
-import {PolyLatex} from '../utilities/latex';
-import {palette} from './palette';
+import { PolyLatex } from '../utilities/latex';
+import { palette } from './palette';
 
 export type Point = [number, number];
 export type BuddyName = 'N' | 'W' | 'E' | 'S';
@@ -57,7 +57,7 @@ export function createSquareGridVisualRefs(): SquareGridVisualRefs {
 }
 
 export function squareGridCoordinates(extent: number) {
-  return Array.from({length: extent * 2 + 1}, (_, index) => index - extent);
+  return Array.from({ length: extent * 2 + 1 }, (_, index) => index - extent);
 }
 
 export function cardinalBuddies(step: number): {
@@ -66,10 +66,10 @@ export function cardinalBuddies(step: number): {
   label: Point;
 }[] {
   return [
-    {name: 'N', point: [0, -step], label: [0, -step - 42]},
-    {name: 'E', point: [step, 0], label: [step + 46, 0]},
-    {name: 'W', point: [-step, 0], label: [-step - 46, 0]},
-    {name: 'S', point: [0, step], label: [0, step + 44]},
+    { name: 'N', point: [0, -step], label: [0, -step - 42] },
+    { name: 'E', point: [step, 0], label: [step + 46, 0] },
+    { name: 'W', point: [-step, 0], label: [-step - 46, 0] },
+    { name: 'S', point: [0, step], label: [0, step + 44] },
   ];
 }
 
@@ -139,7 +139,7 @@ export function SquareGridVisual({
           opacity={0}
         />
       ))}
-      {dotData.map(({x: dotX, y: dotY}, index) => (
+      {dotData.map(({ x: dotX, y: dotY }, index) => (
         <Circle
           ref={makeRef(refs.dots, index)}
           x={dotX}
@@ -150,7 +150,7 @@ export function SquareGridVisual({
           scale={0}
         />
       ))}
-      {cardinalBuddies(step).map(({point}, index) => (
+      {cardinalBuddies(step).map(({ point }, index) => (
         <Line
           ref={makeRef(refs.buddyLines, index)}
           points={[[0, 0], point]}
@@ -169,7 +169,7 @@ export function SquareGridVisual({
         scale={0}
       />
       {showBuddyLabels &&
-        cardinalBuddies(step).map(({name, label}, index) => (
+        cardinalBuddies(step).map(({ name, label }, index) => (
           <Node
             ref={makeRef(refs.buddyLabels, index)}
             x={label[0]}
@@ -181,7 +181,7 @@ export function SquareGridVisual({
             <PolyLatex
               tex={`\\mathrm{${name}}`}
               fontSize={buddyLabelFontSize}
-              fill={palette.ink}
+              fill={palette.text}
             />
           </Node>
         ))}
@@ -210,7 +210,7 @@ interface CardinalBuddyRevealOptions {
 
 export function* revealCardinalBuddies(
   refs: SquareGridVisualRefs,
-  {labels = false}: CardinalBuddyRevealOptions = {},
+  { labels = false }: CardinalBuddyRevealOptions = {},
 ) {
   yield* all(
     refs.centerDot().scale(1, 0.22, easeOutCubic),
