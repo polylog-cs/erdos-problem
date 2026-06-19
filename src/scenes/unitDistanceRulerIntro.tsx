@@ -256,10 +256,7 @@ function latticeNeighbors({ row, col }: Pick<LatticePoint, 'row' | 'col'>) {
 }
 
 const baseEndpointByKey = new Map(
-  baseLatticePoints.map(({ row, col, name }) => [
-    latticeKey(row, col),
-    base(name),
-  ]),
+  baseLatticePoints.map(({ row, col, name }) => [latticeKey(row, col), base(name)]),
 );
 
 const baseKeys = new Set(baseEndpointByKey.keys());
@@ -326,21 +323,20 @@ const growthEdges: GrowthEdge[] = growthLatticePoints.flatMap((point, index) =>
   }),
 );
 
-const growthRings = growthDistances.reduce<Array<{ distance: number; indices: number[] }>>(
-  (rings, distance, index) => {
-    const roundedDistance = Math.round(distance);
-    const currentRing = rings.at(-1);
+const growthRings = growthDistances.reduce<
+  Array<{ distance: number; indices: number[] }>
+>((rings, distance, index) => {
+  const roundedDistance = Math.round(distance);
+  const currentRing = rings.at(-1);
 
-    if (currentRing && currentRing.distance === roundedDistance) {
-      currentRing.indices.push(index);
-    } else {
-      rings.push({ distance: roundedDistance, indices: [index] });
-    }
+  if (currentRing && currentRing.distance === roundedDistance) {
+    currentRing.indices.push(index);
+  } else {
+    rings.push({ distance: roundedDistance, indices: [index] });
+  }
 
-    return rings;
-  },
-  [],
-);
+  return rings;
+}, []);
 
 function pairNumberText(count: number) {
   return `${count}`;
@@ -397,9 +393,7 @@ export default makeScene2D(function* (view) {
   const pairLineEnds = Array.from({ length: maxPairEdges }, (_, index) =>
     Vector2.createSignal(edges[index]?.[1] ? points[edges[index][1]] : points.top),
   );
-  const growthPositions = growthTargets.map(() =>
-    Vector2.createSignal(latticeCenter),
-  );
+  const growthPositions = growthTargets.map(() => Vector2.createSignal(latticeCenter));
   const graphEdges: Line[] = [];
   const growingEdges: Line[] = [];
   const dots: Circle[] = [];
@@ -446,18 +440,10 @@ export default makeScene2D(function* (view) {
 
     yield* all(
       ...pointNames.map((name) =>
-        pointPositions[name](
-          configuration.points[name],
-          0.8,
-          easeInOutCubic,
-        ),
+        pointPositions[name](configuration.points[name], 0.8, easeInOutCubic),
       ),
       ...configuration.edges.flatMap(([from, to], index) => [
-        pairLineStarts[index](
-          configuration.points[from],
-          0.8,
-          easeInOutCubic,
-        ),
+        pairLineStarts[index](configuration.points[from], 0.8, easeInOutCubic),
         pairLineEnds[index](configuration.points[to], 0.8, easeInOutCubic),
         graphEdges[index].opacity(0.52, 0.35, easeOutCubic),
         graphEdges[index].end(1, 0.45, easeInOutCubic),
@@ -507,18 +493,12 @@ export default makeScene2D(function* (view) {
         '\\end{array}'
       }
       fontSize={58}
-      fill={palette.ink}
+      fill={Solarized.text}
     />,
   );
 
   view.add(
-    <Node
-      ref={intro}
-      x={LEFT_TWO_THIRDS_CENTER_X}
-      y={-20}
-      scale={0.94}
-      opacity={0}
-    >
+    <Node ref={intro} x={LEFT_TWO_THIRDS_CENTER_X} y={-20} scale={0.94} opacity={0}>
       <Node>
         {Array.from({ length: maxPairEdges }, (_, index) => (
           <Line
@@ -602,12 +582,7 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Node
-      ref={pairCountGroup}
-      x={LEFT_TWO_THIRDS_CENTER_X}
-      y={300}
-      opacity={0}
-    >
+    <Node ref={pairCountGroup} x={LEFT_TWO_THIRDS_CENTER_X} y={300} opacity={0}>
       <PolyLatex
         x={2}
         tex={'\\#\\mathrm{\\ pairs}='}
@@ -688,17 +663,19 @@ export default makeScene2D(function* (view) {
       ruler().position(midpoint, RULER_MOVE_DURATION, easeInOutCubic),
       ruler().rotation(angle, RULER_MOVE_DURATION, easeInOutCubic),
       rulerLength(length, RULER_MOVE_DURATION, easeInOutCubic),
-      ...graphEdges.slice(0, edges.length).map((line, edgeIndex) =>
-        all(
-          line.stroke(edgeIndex === index ? palette.accent : palette.edge, 0.18),
-          line.lineWidth(
-            edgeIndex === index ? EDGE_WIDTH * 2 : EDGE_WIDTH,
-            0.18,
-            easeOutCubic,
+      ...graphEdges
+        .slice(0, edges.length)
+        .map((line, edgeIndex) =>
+          all(
+            line.stroke(edgeIndex === index ? palette.accent : palette.edge, 0.18),
+            line.lineWidth(
+              edgeIndex === index ? EDGE_WIDTH * 2 : EDGE_WIDTH,
+              0.18,
+              easeOutCubic,
+            ),
+            line.opacity(edgeIndex === index ? 0.95 : 0.32, 0.18, easeOutCubic),
           ),
-          line.opacity(edgeIndex === index ? 0.95 : 0.32, 0.18, easeOutCubic),
         ),
-      ),
     );
     yield* waitFor(RULER_HOLD_DURATION);
   }
@@ -706,13 +683,15 @@ export default makeScene2D(function* (view) {
   yield* waitFor(0.25);
 
   yield* all(
-    ...graphEdges.slice(0, edges.length).map((line) =>
-      all(
-        line.stroke(palette.edge, 0.2),
-        line.lineWidth(EDGE_WIDTH, 0.2, easeInOutCubic),
-        line.opacity(0.52, 0.2, easeInOutCubic),
+    ...graphEdges
+      .slice(0, edges.length)
+      .map((line) =>
+        all(
+          line.stroke(palette.edge, 0.2),
+          line.lineWidth(EDGE_WIDTH, 0.2, easeInOutCubic),
+          line.opacity(0.52, 0.2, easeInOutCubic),
+        ),
       ),
-    ),
     ruler().scale(1.05, 0.2, easeOutCubic),
   );
   //yield* ruler().scale(1, 0.2, easeInOutCubic);
@@ -737,10 +716,7 @@ export default makeScene2D(function* (view) {
 
   yield* all(
     ...growthRings.map((ring) =>
-      delay(
-        ring.distance / GROWTH_REVEAL_PIXELS_PER_SECOND,
-        growRing(ring.indices),
-      ),
+      delay(ring.distance / GROWTH_REVEAL_PIXELS_PER_SECOND, growRing(ring.indices)),
     ),
   );
 

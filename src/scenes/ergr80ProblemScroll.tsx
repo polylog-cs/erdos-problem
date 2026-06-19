@@ -5,24 +5,21 @@ import {
   createRef,
   easeOutCubic,
   linear,
-  type Reference,
   waitFor,
+  type Reference,
 } from '@motion-canvas/core';
 
-import {
-  ergr80Problems,
-  type ErdosProblemCard,
-} from '../data/ergr80Problems';
 import erdosPortrait from '../assets/images/people/paul-erdos-vitalyos.jpg';
+import { ergr80Problems, type ErdosProblemCard } from '../data/ergr80Problems';
+import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 import { PolyTxt } from '../utilities/text';
 
 const paper = '#F7EFE2';
-const cardFill = '#FFFDF8';
-const ink = '#111111';
+const ink = Solarized.text;
 const rule = '#D9CEC1';
-const openStroke = '#C9362E';
-const solvedStroke = '#23864D';
+const openStroke = Solarized.red;
+const solvedStroke = Solarized.green;
 const openTint = '#FBE7E3';
 const solvedTint = '#E4F2E8';
 
@@ -65,7 +62,6 @@ interface CardMetric {
 
 interface CardSlotRefs {
   root: Reference<Rect>;
-  bar: Reference<Rect>;
   id: Reference<PolyTxt>;
   statusBox: Reference<Rect>;
   status: Reference<PolyTxt>;
@@ -118,7 +114,8 @@ function mathWeight(math: string) {
     math
       .replace(/\\[a-zA-Z]+/g, 'mm')
       .replace(/[{}]/g, '')
-      .replace(/\s+/g, '').length * 0.75 +
+      .replace(/\s+/g, '').length *
+      0.75 +
     4
   );
 }
@@ -233,13 +230,7 @@ function lineLimitForFontSize(fontSize: number) {
 }
 
 function fontSizeFor(text: string) {
-  return text.length > 680
-    ? 22
-    : text.length > 500
-      ? 24
-      : text.length > 330
-        ? 26
-        : 30;
+  return text.length > 680 ? 22 : text.length > 500 ? 24 : text.length > 330 ? 26 : 30;
 }
 
 function problemTexLines(text: string, lineLimit: number) {
@@ -348,18 +339,10 @@ function CardSlot({ index, refs }: { index: number; refs: CardSlotRefs }) {
       width={cardWidth}
       height={metric.height}
       radius={8}
-      fill={cardFill}
+      fill={statusTint(problem.status)}
       stroke={stroke}
       lineWidth={4}
     >
-      <Rect
-        ref={refs.bar}
-        x={-cardWidth / 2 + 13}
-        width={10}
-        height={metric.height - 26}
-        radius={5}
-        fill={stroke}
-      />
       <PolyTxt
         ref={refs.id}
         text={`#${ordinal}`}
@@ -377,9 +360,6 @@ function CardSlot({ index, refs }: { index: number; refs: CardSlotRefs }) {
         width={statusBoxWidth(problem.status)}
         height={42}
         radius={6}
-        fill={statusTint(problem.status)}
-        stroke={stroke}
-        lineWidth={2}
       >
         <PolyTxt
           ref={refs.status}
@@ -437,7 +417,6 @@ export default makeScene2D(function* (view) {
   const intro = createRef<Node>();
   const cardSlots: CardSlotRefs[] = Array.from({ length: slotCount }, () => ({
     root: createRef<Rect>(),
-    bar: createRef<Rect>(),
     id: createRef<PolyTxt>(),
     statusBox: createRef<Rect>(),
     status: createRef<PolyTxt>(),
@@ -455,15 +434,12 @@ export default makeScene2D(function* (view) {
 
     refs.root().height(metric.height);
     refs.root().stroke(stroke);
+    refs.root().fill(statusTint(problem.status));
     refs.root().opacity(1);
-    refs.bar().height(metric.height - 26);
-    refs.bar().fill(stroke);
     refs.id().text(`#${ordinal}`);
     refs.id().y(-metric.height / 2 + 38);
     refs.statusBox().y(-metric.height / 2 + 38);
     refs.statusBox().width(statusBoxWidth(problem.status));
-    refs.statusBox().fill(statusTint(problem.status));
-    refs.statusBox().stroke(stroke);
     refs.status().text(statusLabel(problem.status));
     refs.status().fill(stroke);
     refs.prizeBox().y(-metric.height / 2 + 38);
@@ -529,10 +505,7 @@ export default makeScene2D(function* (view) {
             />
           </Node>
           {cardSlots.map((refs, index) => (
-            <CardSlot
-              index={index}
-              refs={refs}
-            />
+            <CardSlot index={index} refs={refs} />
           ))}
         </Node>
       </Rect>
@@ -549,17 +522,15 @@ export default makeScene2D(function* (view) {
 
   const introDy = introHeight + introGap;
   yield* all(
-    intro().y(
-      intro().y() - introDy,
-      introDy / introScrollPixelsPerSecond,
-      linear,
-    ),
+    intro().y(intro().y() - introDy, introDy / introScrollPixelsPerSecond, linear),
     ...slotOrder.map((slotIndex) =>
-      cardSlots[slotIndex].root().y(
-        cardSlots[slotIndex].root().y() - introDy,
-        introDy / introScrollPixelsPerSecond,
-        linear,
-      ),
+      cardSlots[slotIndex]
+        .root()
+        .y(
+          cardSlots[slotIndex].root().y() - introDy,
+          introDy / introScrollPixelsPerSecond,
+          linear,
+        ),
     ),
   );
 
@@ -572,11 +543,9 @@ export default makeScene2D(function* (view) {
 
     yield* all(
       ...slotOrder.map((slotIndex) =>
-        cardSlots[slotIndex].root().y(
-          cardSlots[slotIndex].root().y() - dy,
-          duration,
-          linear,
-        ),
+        cardSlots[slotIndex]
+          .root()
+          .y(cardSlots[slotIndex].root().y() - dy, duration, linear),
       ),
     );
 
@@ -590,9 +559,7 @@ export default makeScene2D(function* (view) {
       cardSlots[lastSlot].root().y() + slotPrepared[lastSlot].metric.height / 2;
 
     applyProblem(recycledSlot, prepared);
-    cardSlots[recycledSlot].root().y(
-      lastBottom + cardGap + prepared.metric.height / 2,
-    );
+    cardSlots[recycledSlot].root().y(lastBottom + cardGap + prepared.metric.height / 2);
     slotOrder.push(recycledSlot);
   }
 
@@ -621,11 +588,13 @@ export default makeScene2D(function* (view) {
 
     yield* all(
       ...slotOrder.map((slotIndex) =>
-        cardSlots[slotIndex].root().y(
-          cardSlots[slotIndex].root().y() + dy,
-          dy / focusScrollPixelsPerSecond,
-          linear,
-        ),
+        cardSlots[slotIndex]
+          .root()
+          .y(
+            cardSlots[slotIndex].root().y() + dy,
+            dy / focusScrollPixelsPerSecond,
+            linear,
+          ),
       ),
     );
   }
@@ -641,11 +610,9 @@ export default makeScene2D(function* (view) {
 
   yield* all(
     ...slotOrder.map((slotIndex) =>
-      cardSlots[slotIndex].root().y(
-        cardSlots[slotIndex].root().y() + centerDy,
-        centerDuration,
-        linear,
-      ),
+      cardSlots[slotIndex]
+        .root()
+        .y(cardSlots[slotIndex].root().y() + centerDy, centerDuration, linear),
     ),
   );
 
