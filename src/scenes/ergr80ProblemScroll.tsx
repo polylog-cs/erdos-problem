@@ -488,8 +488,8 @@ export default makeScene2D(function* (view) {
               fill={ink}
             />
             <PolyTxt
-              text={'1913 - 1996'}
-              y={-300}
+              text={'1913–1996'}
+              y={-310}
               fontSize={44}
               fontWeight={500}
               fill={ink}
