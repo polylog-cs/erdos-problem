@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {spawn} from 'node:child_process';
-import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {mkdir, mkdtemp, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 
@@ -20,6 +20,10 @@ for (let index = 2; index < process.argv.length; index++) {
 const baseUrl = args.get('url') ?? 'http://127.0.0.1:9000';
 const scenes =
   args.get('scenes') ?? 'unitDistanceRulerIntro,cherryCountingTwoWays';
+const sceneNames = scenes
+  .split(',')
+  .map(scene => scene.trim())
+  .filter(Boolean);
 const fps = args.get('fps') ?? '12';
 const scale = args.get('scale') ?? '0.333333';
 const quality = args.get('quality') ?? '45';
@@ -29,9 +33,57 @@ const run =
   `video-export-${new Date().toISOString().replace(/[:.]/g, '-')}`;
 const width = Number(args.get('width') ?? 1280);
 const height = Number(args.get('height') ?? 720);
+const renderOutputPath = path.join('output', run);
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function runProcess(command, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {stdio: ['ignore', 'ignore', 'pipe']});
+    let stderr = '';
+
+    child.stderr.on('data', chunk => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', reject);
+    child.on('close', code => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`${command} exited with ${code}\n${stderr}`));
+    });
+  });
+}
+
+async function encodeScene(sceneName, outputPath) {
+  await mkdir(path.dirname(outputPath), {recursive: true});
+  await rm(outputPath, {force: true});
+  await runProcess('ffmpeg', [
+    '-hide_banner',
+    '-loglevel',
+    'warning',
+    '-y',
+    '-framerate',
+    fps,
+    '-start_number',
+    '0',
+    '-i',
+    path.join(renderOutputPath, sceneName, '%06d.jpeg'),
+    '-vf',
+    'scale=ceil(iw/2)*2:ceil(ih/2)*2:flags=bicubic',
+    '-c:v',
+    'libx264',
+    '-pix_fmt',
+    'yuv420p',
+    '-movflags',
+    '+faststart',
+    outputPath,
+  ]);
 }
 
 const userDataDir = await mkdtemp(path.join(tmpdir(), 'motion-export-chrome-'));
@@ -213,8 +265,19 @@ try {
     throw new Error(status.error);
   }
 
-  console.log(JSON.stringify(status, null, 2));
-  console.log(`output/${run}`);
+  const mp4Outputs =
+    sceneNames.length === 1
+      ? [path.join('exports', `${run}.mp4`)]
+      : sceneNames.map(sceneName => path.join('exports', run, `${sceneName}.mp4`));
+
+  for (let index = 0; index < sceneNames.length; index++) {
+    await encodeScene(sceneNames[index], mp4Outputs[index]);
+  }
+
+  await rm(renderOutputPath, {recursive: true, force: true});
+
+  console.log(JSON.stringify({...status, mp4Outputs}, null, 2));
+  console.log(mp4Outputs.join('\n'));
 
   socket.close();
 } finally {

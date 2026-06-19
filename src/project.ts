@@ -9,6 +9,7 @@ import gridLowerBoundQuestion from './scenes/gridLowerBoundQuestion?scene';
 import gridPythagoreanDistances from './scenes/gridPythagoreanDistances?scene';
 import primeProductSweep from './scenes/primeProductSweep?scene';
 import unitDistanceRulerIntro from './scenes/unitDistanceRulerIntro?scene';
+import waterlineMathAbility from './scenes/waterlineMathAbility?scene';
 
 export default makeProject({
   experimentalFeatures: true,
@@ -22,5 +23,6 @@ export default makeProject({
     discreteGeometryAntIsland,
     cyclotomicPointsetSpiral,
     asymptoticUnitDistanceTimeline,
+    waterlineMathAbility,
   ],
 });

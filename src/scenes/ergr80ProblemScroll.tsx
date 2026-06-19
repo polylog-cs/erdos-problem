@@ -544,6 +544,7 @@ export default makeScene2D(function* (view) {
   const slotOrder = cardSlots.map((_, index) => index);
 
   yield* stage().opacity(1, 0.45, easeOutCubic);
+  yield* waitFor(10);
   yield* waitFor(0.75);
 
   const introDy = introHeight + introGap;
@@ -602,10 +603,7 @@ export default makeScene2D(function* (view) {
   );
   const focusStartIndex = Math.max(
     0,
-    Math.min(
-      focusProblemIndex - Math.floor(slotCount / 2),
-      preparedProblems.length - slotCount,
-    ),
+    Math.min(focusProblemIndex, preparedProblems.length - slotCount),
   );
 
   while (firstProblemIndex > focusStartIndex) {

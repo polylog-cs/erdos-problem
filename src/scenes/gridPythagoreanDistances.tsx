@@ -18,6 +18,7 @@ import {
   gridSegmentsForDirection,
   latticeDots,
   pythagoreanDirections,
+  toScreen,
   type Point,
 } from '../lib/pythagoreanGridScene';
 import { RotatingWheel } from '../lib/rotatingWheel';
@@ -39,10 +40,22 @@ function fullGridDotsEnabled() {
   );
 }
 
+const smallGridX = -330;
+const smallGridY = 35;
+const smallFormulaJoinX = 42;
+const smallFormulaY = -squareGridExtent * squareGridStep - 64;
+
+const denseGridX = -560;
+const denseGridY = 25;
+const denseFormulaJoinX = denseGridX + 42;
+const denseFormulaY = denseGridY - 70 * 5.5 - 64;
+const denseTextX = 55;
+
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
   const smallStep = squareGridStep;
+  const smallStage = createRef<Node>();
   const smallGrid = createRef<Node>();
   const smallLines: Line[] = [];
   const smallDots: Circle[] = [];
@@ -50,8 +63,11 @@ export default makeScene2D(function* (view) {
   const unitLabel = createRef<PolyLatex>();
   const fiveFormulaLhs = createRef<PolyLatex>();
   const fiveFormulaRhs = createRef<PolyLatex>();
+  const rescaleRuler = createRef<Node>();
+  const rescaleRulerLabel = createRef<PolyLatex>();
   const globalFiveEdgesLayer = createRef<Node>();
   const globalFiveEdgesLayers: Node[] = [];
+  const rescaleRulerLength = 5 * smallStep;
 
   const unitWheel = new RotatingWheel({
     directions: pythagoreanDirections(1),
@@ -82,96 +98,139 @@ export default makeScene2D(function* (view) {
   const globalFiveEdgeLines = globalFiveEdges.map(() => [] as Line[]);
 
   view.add(
-    <Node ref={smallGrid} x={-110} y={35}>
-      {squareGridCoordinates.map((x, index) => (
-        <Line
-          ref={makeRef(smallLines, index)}
-          points={[
-            [x * smallStep, -squareGridExtent * smallStep],
-            [x * smallStep, squareGridExtent * smallStep],
-          ]}
-          stroke={palette.grid}
-          lineWidth={1}
-          end={0}
-          opacity={0}
-        />
-      ))}
-      {squareGridCoordinates.map((y, index) => (
-        <Line
-          ref={makeRef(smallLines, squareGridCoordinates.length + index)}
-          points={[
-            [-squareGridExtent * smallStep, y * smallStep],
-            [squareGridExtent * smallStep, y * smallStep],
-          ]}
-          stroke={palette.grid}
-          lineWidth={1}
-          end={0}
-          opacity={0}
-        />
-      ))}
-      <Node ref={globalFiveEdgesLayer}>
-        {globalFiveEdges.flatMap((segments, directionIndex) => (
-          <Node
-            ref={makeRef(globalFiveEdgesLayers, directionIndex)}
+    <Node ref={smallStage} x={smallGridX} y={smallGridY}>
+      <Node ref={smallGrid}>
+        {squareGridCoordinates.map((x, index) => (
+          <Line
+            ref={makeRef(smallLines, index)}
+            points={[
+              [x * smallStep, -squareGridExtent * smallStep],
+              [x * smallStep, squareGridExtent * smallStep],
+            ]}
+            stroke={palette.grid}
+            lineWidth={1}
+            end={0}
             opacity={0}
-            zIndex={directionIndex}
-          >
-            {segments.map(([[startX, startY], [endX, endY]], edgeIndex) => (
-              <Line
-                ref={makeRef(globalFiveEdgeLines[directionIndex], edgeIndex)}
-                points={[
-                  [startX * smallStep, -startY * smallStep],
-                  [endX * smallStep, -endY * smallStep],
-                ]}
-                stroke={colorFor(directionIndex, fiveWheel.directions.length)}
-                lineWidth={2.2}
-                lineCap={'round'}
-                opacity={1}
-                end={1}
-              />
-            ))}
-          </Node>
+          />
         ))}
-      </Node>
-      {latticeDots(squareGridExtent).map(([x, y], index) => (
+        {squareGridCoordinates.map((y, index) => (
+          <Line
+            ref={makeRef(smallLines, squareGridCoordinates.length + index)}
+            points={[
+              [-squareGridExtent * smallStep, y * smallStep],
+              [squareGridExtent * smallStep, y * smallStep],
+            ]}
+            stroke={palette.grid}
+            lineWidth={1}
+            end={0}
+            opacity={0}
+          />
+        ))}
+        <Node ref={globalFiveEdgesLayer}>
+          {globalFiveEdges.flatMap((segments, directionIndex) => (
+            <Node
+              ref={makeRef(globalFiveEdgesLayers, directionIndex)}
+              opacity={0}
+              zIndex={directionIndex}
+            >
+              {segments.map(([[startX, startY], [endX, endY]], edgeIndex) => (
+                <Line
+                  ref={makeRef(globalFiveEdgeLines[directionIndex], edgeIndex)}
+                  points={[
+                    [startX * smallStep, -startY * smallStep],
+                    [endX * smallStep, -endY * smallStep],
+                  ]}
+                  stroke={colorFor(directionIndex, fiveWheel.directions.length)}
+                  lineWidth={2.2}
+                  lineCap={'round'}
+                  opacity={1}
+                  end={1}
+                />
+              ))}
+            </Node>
+          ))}
+        </Node>
+        {latticeDots(squareGridExtent).map(([x, y], index) => (
+          <Circle
+            ref={makeRef(smallDots, index)}
+            x={x * smallStep}
+            y={y * smallStep}
+            size={14}
+            fill={palette.dot}
+            opacity={0.86}
+            scale={0}
+          />
+        ))}
+
         <Circle
-          ref={makeRef(smallDots, index)}
-          x={x * smallStep}
-          y={y * smallStep}
+          ref={centerDot}
           size={14}
-          fill={palette.dot}
-          opacity={0.86}
+          fill={palette.focus}
+          stroke={palette.background}
+          lineWidth={3}
           scale={0}
         />
-      ))}
-
-      <Circle
-        ref={centerDot}
-        size={14}
-        fill={palette.focus}
-        stroke={palette.background}
-        lineWidth={3}
-        scale={0}
-      />
-      <PolyLatex
-        ref={unitLabel}
-        x={smallStep / 2}
-        y={-22}
-        tex={'1'}
-        fontSize={30}
+        <PolyLatex
+          ref={unitLabel}
+          x={smallStep / 2}
+          y={-22}
+          tex={'1'}
+          fontSize={30}
+          opacity={0}
+        />
+        {unitWheel.view}
+        {fiveWheel.view}
+      </Node>
+      <Node
+        ref={rescaleRuler}
+        x={squareGridExtent * smallStep + 140}
+        y={0}
         opacity={0}
-      />
-      {unitWheel.view}
-      {fiveWheel.view}
-    </Node>,
-  );
-
-  view.add(
-    <>
+      >
+        <Line
+          points={[
+            [-rescaleRulerLength / 2, 0],
+            [rescaleRulerLength / 2, 0],
+          ]}
+          stroke={palette.accent}
+          lineWidth={20}
+          lineCap={'round'}
+          opacity={0.22}
+        />
+        <Line
+          points={[
+            [-rescaleRulerLength / 2, 0],
+            [rescaleRulerLength / 2, 0],
+          ]}
+          stroke={palette.accentDark}
+          lineWidth={4}
+          lineCap={'round'}
+        />
+        {[-0.5, 0, 0.5].map((tick) => (
+          <Line
+            points={[
+              [tick * rescaleRulerLength, -18],
+              [tick * rescaleRulerLength, 18],
+            ]}
+            stroke={palette.ink}
+            lineWidth={tick === 0 ? 2.5 : 4}
+            lineCap={'round'}
+            opacity={tick === 0 ? 0.42 : 0.72}
+          />
+        ))}
+        <PolyLatex
+          ref={rescaleRulerLabel}
+          tex={'5'}
+          y={-52}
+          fill={palette.ink}
+          fontSize={54}
+          opacity={0.92}
+        />
+      </Node>
       <PolyLatex
         ref={fiveFormulaLhs}
-        x={565}
-        y={-255}
+        x={smallFormulaJoinX}
+        y={smallFormulaY}
         tex={equationLhsFor(fiveWheel.directions[0])}
         fontSize={46}
         offsetX={1}
@@ -179,14 +238,14 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={fiveFormulaRhs}
-        x={582}
-        y={-255}
+        x={smallFormulaJoinX + 17}
+        y={smallFormulaY}
         tex={'=5^2'}
         fontSize={46}
         offsetX={-1}
         opacity={0}
       />
-    </>,
+    </Node>,
   );
 
   yield* all(
@@ -221,15 +280,21 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(1);
 
+  const [fiveLabelX, fiveLabelY] = toScreen(
+    fiveWheel.directions[0][0],
+    fiveWheel.directions[0][1],
+    smallStep,
+  );
   const fiveLabel = (
     <PolyLatex
       tex="5"
-      position={fiveWheel.directions[0]}
+      x={fiveLabelX + 24}
+      y={fiveLabelY - 8}
       fill={fiveWheel.rays[0].stroke}
       opacity={0}
     />
   );
-  view.add(fiveLabel);
+  smallGrid().add(fiveLabel);
 
   yield* all(
     fiveWheel.active().opacity(1, 0.25, easeOutCubic),
@@ -256,12 +321,31 @@ export default makeScene2D(function* (view) {
   }
 
   yield* fiveWheel.active().opacity(0, 0.22, easeInOutCubic);
+  yield* waitFor(0.25);
+
+  yield* rescaleRuler().opacity(1, 0.35, easeOutCubic);
   yield* waitFor(0.35);
+
+  yield* all(
+    smallStage().scale(0.2, 0.95, easeInOutCubic),
+    rescaleRulerLabel().scale(5, 0.95, easeInOutCubic),
+    rescaleRulerLabel().y(-260, 0.95, easeInOutCubic),
+    delay(0.36, rescaleRulerLabel().tex('1', 0.25)),
+  );
+  yield* waitFor(0.55);
+  yield* all(
+    smallStage().scale(1, 0.95, easeInOutCubic),
+    rescaleRulerLabel().scale(1, 0.95, easeInOutCubic),
+    rescaleRulerLabel().y(-52, 0.95, easeInOutCubic),
+    delay(0.14, rescaleRulerLabel().tex('5', 0.25)),
+  );
+  yield* waitFor(0.25);
 
   yield* all(
     centerDot().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaLhs().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaRhs().opacity(0, 0.25, easeInOutCubic),
+    rescaleRuler().opacity(0, 0.25, easeInOutCubic),
     fiveWheel.fadeOut(0.3),
   );
 
@@ -303,7 +387,7 @@ export default makeScene2D(function* (view) {
   });
 
   view.add(
-    <Node ref={denseGrid} x={-130} y={25} opacity={0}>
+    <Node ref={denseGrid} x={denseGridX} y={denseGridY} opacity={0}>
       {latticeDots(70, denseDotEvery).map(([x, y]) => (
         <Circle
           x={x * denseStep}
@@ -325,14 +409,12 @@ export default makeScene2D(function* (view) {
     </Node>,
   );
 
-  denseGrid().x(-300);
-
   view.add(
     <>
       <PolyLatex
         ref={denseVectorFormulaLhs}
-        x={555}
-        y={-255}
+        x={denseFormulaJoinX}
+        y={denseFormulaY}
         tex={equationLhsFor(sixtyFiveWheel.directions[0])}
         fontSize={42}
         offsetX={1}
@@ -340,8 +422,8 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={denseVectorFormulaRhs}
-        x={572}
-        y={-255}
+        x={denseFormulaJoinX + 17}
+        y={denseFormulaY}
         tex={'=65^2'}
         fontSize={42}
         offsetX={-1}
@@ -349,38 +431,38 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={whyTitle}
-        x={175}
+        x={denseTextX}
         y={-265}
         tex={'\\text{Why is 65 special?}'}
-        fontSize={64}
-        offsetX={-1}
+        fontSize={48}
+        offsetX={0}
         opacity={0}
       />
       <PolyLatex
         ref={primeLine}
-        x={175}
+        x={denseTextX}
         y={-190}
         tex={'\\text{primes with remainder 1 mod 4}'}
-        fontSize={40}
-        offsetX={-1}
+        fontSize={28}
+        offsetX={0}
         opacity={0}
       />
       <PolyLatex
         ref={primeList}
-        x={175}
+        x={denseTextX}
         y={-120}
         tex={'5,13,17,29,37,\\ldots'}
-        fontSize={50}
-        offsetX={-1}
+        fontSize={40}
+        offsetX={0}
         opacity={0}
       />
       <PolyLatex
         ref={productLine}
-        x={175}
+        x={denseTextX}
         y={-45}
         tex={'5\\cdot13=65'}
-        fontSize={50}
-        offsetX={-1}
+        fontSize={40}
+        offsetX={0}
         opacity={0}
       />
     </>,

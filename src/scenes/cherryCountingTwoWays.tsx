@@ -4,10 +4,8 @@ import {
   all,
   Color,
   createRef,
-  createSignal,
   easeInOutCubic,
   easeOutCubic,
-  linear,
   makeRef,
   sequence,
   Vector2,
@@ -87,16 +85,17 @@ const secondCherryEdges: [PointName, PointName][] = [
   ['bottom', 'right'],
 ];
 
-const centerNeighbors: PointName[] = ['left', 'right', 'topLeftLeaf', 'topRightLeaf'];
+type CenterCherryStep = {
+  moving: number;
+  fixed: number;
+  movingRotation: number;
+  fixedRotation: number;
+};
 
-const centerCherryPairs: [PointName, PointName][] = [
-  ['left', 'right'],
-  ['left', 'topLeftLeaf'],
-  ['left', 'topRightLeaf'],
-  ['right', 'topLeftLeaf'],
-  ['right', 'topRightLeaf'],
-  ['topLeftLeaf', 'topRightLeaf'],
-];
+const centerStarAngles = [-162, -126, -90, -54, -18, 18, 54, 90, 126, 162];
+const centerStarStep = 36;
+const centerStarFixedStart = 2;
+const centerStarClockTurns = 6;
 
 const samplePairs: [PointName, PointName][] = [
   ['topLeftLeaf', 'rightLeaf'],
@@ -115,36 +114,62 @@ const pointIndex = Object.fromEntries(
 const red = Solarized.red;
 const redDark = Solarized.red;
 const redLight = new Color(Solarized.red).brighten(0.5);
+const redShade = new Color(Solarized.red).darken(0.45);
 const green = Solarized.green;
 const greenLight = new Color(Solarized.green).brighten(0.5);
 const brown = Solarized.base02;
 const centerStemLength = 245;
-const upperBoundDock: Point = [205, -350];
 
 const EDGE_WIDTH = 10;
 const POINT_SIZE = 30;
+const GRAPH_POSITION: Point = [-450, 15];
+const CENTER_STAR_GRAPH_POSITION: Point = [-450, 115];
+const LOCAL_CHERRY_APPROX =
+  '\\#\\text{cherries around }u\\approx\\#\\mathrm{buddies}(u)^2';
+const LOCAL_CHERRY_BINOMIAL =
+  '\\#\\text{cherries around }u=\\binom{\\#\\mathrm{buddies}(u)}{2}';
+const SUM_CHERRY_FORMULA =
+  '\\#\\mathrm{cherries}\\approx\\sum_u\\#\\mathrm{buddies}(u)^2\\ge n\\left({2m\\over n}\\right)^2={2m^2\\over n}';
+const LOWER_BOUND_TEX = '\\#\\mathrm{cherries}\\ge{2m^2\\over n}';
 
 function xy(name: PointName) {
   return new Vector2(points[name][0], points[name][1]);
 }
 
-function cherryCenter(phase: number, angle: () => number): Point {
-  return [0, Math.sin(angle() + phase) * 126];
+function pointFromAngle(angle: number, radius = centerStemLength): Point {
+  const radians = (angle * Math.PI) / 180;
+
+  return [
+    points.top[0] + Math.cos(radians) * radius,
+    points.top[1] + Math.sin(radians) * radius,
+  ];
 }
 
-function cherryDepth(phase: number, angle: () => number) {
-  return (Math.cos(angle() + phase) + 1) / 2;
+function clockCherrySteps(): CenterCherryStep[] {
+  const count = centerStarAngles.length;
+  const steps: CenterCherryStep[] = [];
+  const fixedStartRotation = centerStarAngles[centerStarFixedStart];
+
+  for (let tick = 0; tick <= centerStarClockTurns; tick++) {
+    const fixed = (centerStarFixedStart + tick) % count;
+
+    steps.push({
+      moving: (fixed + 1) % count,
+      fixed,
+      fixedRotation: fixedStartRotation + tick * centerStarStep,
+      movingRotation:
+        fixedStartRotation + centerStarStep + tick * (360 + centerStarStep),
+    });
+  }
+
+  return steps;
 }
+
+const centerStarCherrySteps = clockCherrySteps();
+const initialCenterStarStep = centerStarCherrySteps[0];
 
 function shinePoint(name: PointName): Point {
   return [points[name][0] - 11, points[name][1] - 13];
-}
-
-function angleFromU(name: PointName) {
-  const [ux, uy] = points.top;
-  const [x, y] = points[name];
-
-  return (Math.atan2(y - uy, x - ux) * 180) / Math.PI;
 }
 
 export default makeScene2D(function* (view) {
@@ -152,7 +177,6 @@ export default makeScene2D(function* (view) {
 
   const graph = createRef<Node>();
   const flatGraph = createRef<Node>();
-  const pseudo3d = createRef<Node>();
   const baseLines: Line[] = [];
   const baseDots: Circle[] = [];
   const firstLines: Line[] = [];
@@ -160,28 +184,24 @@ export default makeScene2D(function* (view) {
   const secondLines: Line[] = [];
   const cherryBalls: Circle[] = [];
   const cherryShines: Circle[] = [];
+  const intersectionArrows: Line[] = [];
   const centers: Circle[] = [];
-  const threeLines: Line[] = [];
-  const threeCenters: Circle[] = [];
-  const threeShines: Circle[] = [];
-  const centerCountLines: Line[] = [];
+  const starLines: Line[] = [];
+  const starDots: Circle[] = [];
   const rotatingCherry = createRef<Node>();
   const rotatingCherryStems: Node[] = [];
   const upperBound = createRef<PolyLatex>();
   const centerFormula = createRef<PolyLatex>();
   const uLabel = createRef<PolyLatex>();
-  const finalFormula = createRef<Node>();
-  const finalFormulaLines: PolyLatex[] = [];
+  const cherryLabel = createRef<PolyTxt>();
+  const cherryArrow = createRef<Line>();
+  const sumFormula = createRef<PolyLatex>();
   const lowerBoundFormula = createRef<PolyLatex>();
   const combinedFormula = createRef<PolyLatex>();
-  const angle = createSignal(0);
-  const threeLeft: Point = [-160, 0];
-  const threeRight: Point = [160, 0];
-  const phases = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3];
   const cherryCircles: Circle[] = [];
 
   view.add(
-    <Node ref={graph} x={-450} y={15} scale={0.78}>
+    <Node ref={graph} x={GRAPH_POSITION[0]} y={GRAPH_POSITION[1]} scale={0.78}>
       <Node ref={flatGraph}>
         {baseEdges.map(([from, to], index) => (
           <Line
@@ -239,10 +259,10 @@ export default makeScene2D(function* (view) {
             opacity={0}
           />
         ))}
-        {centerNeighbors.map((name, index) => (
+        {centerStarAngles.map((angle, index) => (
           <Line
-            ref={makeRef(centerCountLines, index)}
-            points={[xy('top'), xy(name)]}
+            ref={makeRef(starLines, index)}
+            points={[points.top, pointFromAngle(angle)]}
             stroke={green}
             lineWidth={7}
             lineCap={'round'}
@@ -250,13 +270,34 @@ export default makeScene2D(function* (view) {
             opacity={0}
           />
         ))}
+        {centerStarAngles.map((angle, index) => {
+          const [x, y] = pointFromAngle(angle);
+
+          return (
+            <Circle
+              ref={makeRef(starDots, index)}
+              x={x}
+              y={y}
+              size={24}
+              fill={brown}
+              stroke={palette.background}
+              lineWidth={3}
+              scale={0}
+              opacity={0}
+            />
+          );
+        })}
         <Node ref={rotatingCherry} opacity={0}>
           {[0, 1].map((index) => (
             <Node
               ref={makeRef(rotatingCherryStems, index)}
               x={points.top[0]}
               y={points.top[1]}
-              rotation={angleFromU(centerCherryPairs[0][index])}
+              rotation={
+                index === 0
+                  ? initialCenterStarStep.movingRotation
+                  : initialCenterStarStep.fixedRotation
+              }
             >
               <Line
                 points={[
@@ -273,14 +314,29 @@ export default makeScene2D(function* (view) {
                 fill={red}
                 stroke={redDark}
                 lineWidth={4}
-              />
-              {/* <Circle
-                x={centerStemLength - 11}
-                y={-13}
-                size={12}
-                fill={redLight}
-                opacity={0.9}
-              /> */}
+              >
+                <Circle
+                  x={19}
+                  y={22}
+                  size={54}
+                  fill={redShade}
+                  opacity={0.2}
+                />
+                <Circle
+                  x={-19}
+                  y={-24}
+                  size={22}
+                  fill={redLight}
+                  opacity={0.82}
+                />
+                <Circle
+                  x={-10}
+                  y={-33}
+                  size={9}
+                  fill={palette.background}
+                  opacity={0.28}
+                />
+              </Circle>
             </Node>
           ))}
         </Node>
@@ -296,12 +352,26 @@ export default makeScene2D(function* (view) {
             scale={0}
           >
             <Circle
+              x={19}
+              y={22}
+              size={54}
+              fill={redShade}
+              opacity={0.2}
+            />
+            <Circle
               ref={makeRef(cherryShines, index)}
-              x={-11}
-              y={-13}
-              size={13}
-              fill={red}
+              x={-19}
+              y={-24}
+              size={22}
+              fill={redLight}
               opacity={0}
+            />
+            <Circle
+              x={-10}
+              y={-33}
+              size={9}
+              fill={palette.background}
+              opacity={0.28}
             />
           </Circle>
         ))}
@@ -327,67 +397,53 @@ export default makeScene2D(function* (view) {
           opacity={0}
         />
       </Node>
-
-      <Node ref={pseudo3d} x={900} y={-5} opacity={0} scale={1.18}>
-        <Circle
-          width={44}
-          height={252}
-          stroke={'#b9c2c7'}
-          lineWidth={3}
-          lineDash={[10, 9]}
-          opacity={0.7}
-        />
+      <Line
+        ref={cherryArrow}
+        points={[
+          [340, -250],
+          [86, -86],
+        ]}
+        stroke={redDark}
+        lineWidth={5}
+        lineCap={'round'}
+        endArrow
+        arrowSize={20}
+        opacity={0}
+        end={0}
+      />
+      <PolyTxt
+        ref={cherryLabel}
+        text={'cherry'}
+        x={405}
+        y={-275}
+        fill={redDark}
+        fontSize={54}
+        fontWeight={700}
+        opacity={0}
+      />
+      {[
+        {
+          from: [-250, -335] as Point,
+          to: [-24, -178] as Point,
+        },
+        {
+          from: [250, 335] as Point,
+          to: [24, 178] as Point,
+        },
+      ].map(({ from, to }, index) => (
         <Line
-          points={[threeLeft, threeRight]}
-          stroke={'#cad0d4'}
-          lineWidth={3}
-          lineDash={[12, 10]}
+          ref={makeRef(intersectionArrows, index)}
+          points={[from, to]}
+          stroke={redDark}
+          lineWidth={5}
+          lineCap={'round'}
+          endArrow
+          arrowSize={18}
+          opacity={0}
+          end={0}
         />
-        {phases.map((phase, phaseIndex) => (
-          <Node>
-            <Line
-              ref={makeRef(threeLines, phaseIndex * 2)}
-              points={[threeLeft, () => cherryCenter(phase, angle)]}
-              stroke={green}
-              lineWidth={() => 4 + cherryDepth(phase, angle) * 5}
-              lineCap={'round'}
-              opacity={() => 0.24 + cherryDepth(phase, angle) * 0.7}
-            />
-            <Line
-              ref={makeRef(threeLines, phaseIndex * 2 + 1)}
-              points={[threeRight, () => cherryCenter(phase, angle)]}
-              stroke={green}
-              lineWidth={() => 4 + cherryDepth(phase, angle) * 5}
-              lineCap={'round'}
-              opacity={() => 0.24 + cherryDepth(phase, angle) * 0.7}
-            />
-            <Circle
-              ref={makeRef(threeCenters, phaseIndex)}
-              x={() => cherryCenter(phase, angle)[0]}
-              y={() => cherryCenter(phase, angle)[1]}
-              size={() => 15 + cherryDepth(phase, angle) * 12}
-              fill={brown}
-              stroke={palette.background}
-              lineWidth={3}
-              opacity={() => 0.38 + cherryDepth(phase, angle) * 0.62}
-            />
-            <Circle
-              ref={makeRef(threeShines, phaseIndex)}
-              x={() => cherryCenter(phase, angle)[0] - 5}
-              y={() => cherryCenter(phase, angle)[1] - 6}
-              size={() => 5 + cherryDepth(phase, angle) * 5}
-              fill={Solarized.orange}
-              opacity={() => 0 * cherryDepth(phase, angle) * 0.7}
-            />
-          </Node>
-        ))}
-        {[threeLeft, threeRight].map(([x, y]) => (
-          <Node>
-            <Circle x={x} y={y} size={80} fill={red} stroke={redDark} lineWidth={5} />
-            <Circle x={x - 13} y={y - 16} size={15} fill={redLight} opacity={0} />
-          </Node>
-        ))}
-      </Node>
+      ))}
+
       {(['left', 'right', 'top'] as PointName[]).map((name, index) => (
         <Circle
           ref={makeRef(cherryCircles, index)}
@@ -404,42 +460,34 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={centerFormula}
-      x={112}
-      y={38}
-      tex={'\\#\\text{cherries around } u\\approx\\#\\text{buddies}(u)^2'}
-      fontSize={22}
+      x={-760}
+      y={278}
+      tex={LOCAL_CHERRY_APPROX}
+      fontSize={31}
       offsetX={-1}
       opacity={0}
-      scale={1.7}
     />,
   );
 
   view.add(
-    <Node ref={finalFormula} x={112} y={60} opacity={0} scale={1.7}>
-      {[
-        '\\mkern 120mu\\Downarrow',
-        '\\#\\text{cherries total}\\approx\\sum_u\\#\\mathrm{buddies}(u)^2',
-        '\\llap{\\textit{\\scriptsize(Cauchy-Schwarz)}\\;\\;\\;}{\\ge{}} n\\left({2m\\over n}\\right)^2={2m^2\\over n}',
-      ].map((tex, index) => (
-        <PolyLatex
-          ref={makeRef(finalFormulaLines, index)}
-          y={30 + index * 60}
-          tex={tex}
-          fontSize={21}
-          offsetX={-1}
-          opacity={0}
-        />
-      ))}
-    </Node>,
+    <PolyLatex
+      ref={sumFormula}
+      x={-860}
+      y={340}
+      tex={SUM_CHERRY_FORMULA}
+      fontSize={29}
+      offsetX={-1}
+      opacity={0}
+    />,
   );
 
   view.add(
     <PolyLatex
       ref={lowerBoundFormula}
-      x={105}
-      y={265}
-      tex={'2.\\;\\;\\;\\#\\mathrm{cherries}\\ge{2m^2\\over n}'}
-      fontSize={64}
+      x={-760}
+      y={340}
+      tex={LOWER_BOUND_TEX}
+      fontSize={44}
       offsetX={-1}
       opacity={0}
     />,
@@ -448,7 +496,7 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={combinedFormula}
-      x={170}
+      x={-585}
       y={200}
       tex={'\\Rightarrow\\;\\;\\;\\\\m\\le n^{1.5}'}
       fontSize={80}
@@ -460,10 +508,10 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={upperBound}
-      x={25}
-      y={282}
-      tex={'1.\\;\\;\\;\\#\\mathrm{cherries}\\le 2n^2'}
-      fontSize={64}
+      x={-780}
+      y={-335}
+      tex={'\\#\\mathrm{cherries}\\le 2n^2'}
+      fontSize={54}
       offsetX={-1}
       opacity={0}
     />,
@@ -495,16 +543,30 @@ export default makeScene2D(function* (view) {
 
   yield* all(
     ...cherryBalls.map((ball) => ball.scale(1, 0.45, easeOutCubic)),
-    ...cherryShines.map((shine) => shine.opacity(0 * 0.9, 0.35, easeOutCubic)),
+    ...cherryShines.map((shine) => shine.opacity(0.68, 0.35, easeOutCubic)),
     ...firstLines.map((line) => line.lineWidth(14, 0.35, easeOutCubic)),
     centers[0].scale(1.18, 0.35, easeOutCubic),
   );
 
-  yield* all(...firstLineLabels.map((label) => label.opacity(1, 0.5)));
-  yield* waitFor(0.9);
-  yield* all(...firstLineLabels.map((label) => label.opacity(0, 0.5)));
+  yield* all(
+    ...baseLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
+    ...baseDots.map((dot) => dot.opacity(0, 0.35, easeInOutCubic)),
+    ...firstLineLabels.map((label) => label.opacity(1, 0.35, easeOutCubic)),
+    cherryLabel().opacity(1, 0.35, easeOutCubic),
+    all(cherryArrow().opacity(1, 0.35, easeOutCubic), cherryArrow().end(1, 0.35)),
+  );
 
-  yield* waitFor(0.9);
+  yield* waitFor(2.6);
+
+  yield* all(
+    ...baseLines.map((line) => line.opacity(0.5, 0.45, easeInOutCubic)),
+    ...baseDots.map((dot) => dot.opacity(1, 0.45, easeInOutCubic)),
+    ...firstLineLabels.map((label) => label.opacity(0, 0.35, easeInOutCubic)),
+    cherryLabel().opacity(0, 0.35, easeInOutCubic),
+    all(cherryArrow().opacity(0, 0.35, easeInOutCubic), cherryArrow().end(0, 0.35)),
+  );
+
+  yield* waitFor(5.6);
 
   yield* all(
     ...firstLines.map((line) => line.opacity(0, 1)),
@@ -512,13 +574,18 @@ export default makeScene2D(function* (view) {
     ...cherryBalls.map((cherry) => cherry.scale(0, 1)),
   );
 
-  yield* waitFor(0.9);
+  yield* waitFor(2.2);
+
+  yield* all(...cherryBalls.map((cherry) => cherry.scale(1, 1)));
+
+  yield* waitFor(0.8);
 
   yield* sequence(
-    1.5,
-    all(...cherryBalls.map((cherry) => cherry.scale(1, 1))),
-    sequence(0.3, ...cherryCircles.slice(0, 2).map((circle) => circle.end(1, 1))),
+    0.3,
+    ...cherryCircles.slice(0, 2).map((circle) => circle.end(1, 1)),
   );
+
+  yield* waitFor(0.7);
 
   /*
   for (const [leftName, rightName] of samplePairs) {
@@ -530,16 +597,22 @@ export default makeScene2D(function* (view) {
     );
   }*/
 
-  yield* waitFor(1);
-
   yield* all(
+    all(
+      intersectionArrows[0].opacity(1, 0.35, easeOutCubic),
+      intersectionArrows[0].end(1, 0.35),
+    ),
     centers[0].scale(1.18, 0.5, easeOutCubic),
     ...firstLines.map((line) => line.opacity(1, 0.8, easeOutCubic)),
   );
 
-  yield* waitFor(0.5);
+  yield* waitFor(1.4);
 
   yield* all(
+    all(
+      intersectionArrows[1].opacity(1, 0.35, easeOutCubic),
+      intersectionArrows[1].end(1, 0.35),
+    ),
     sequence(
       0,
       ...secondLines.map((line) =>
@@ -563,29 +636,25 @@ export default makeScene2D(function* (view) {
     ...secondLines.map((line) => line.lineWidth(12, 0.28, easeInOutCubic)),
   );*/
 
-  yield* waitFor(2);
-
-  yield* pseudo3d().opacity(1, 0.55, easeOutCubic);
-
-  yield* angle(Math.PI * 2, 4.2, linear);
-
-  yield* waitFor(0.2);
-
-  yield* pseudo3d().opacity(0, 0.55, easeInOutCubic);
-
-  yield* waitFor(0.35);
+  yield* waitFor(1.2);
 
   yield* upperBound().opacity(1, 0.65, easeOutCubic);
 
+  yield* waitFor(17);
+
   yield* all(
-    upperBound().position(upperBoundDock, 0.55, easeInOutCubic),
-    upperBound().scale(0.62, 0.55, easeInOutCubic),
     ...cherryCircles.slice(0, 2).map((circle) => circle.opacity(0, 0.55)),
+    ...baseLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
+    ...baseDots.map((dot) => dot.opacity(0, 0.35, easeInOutCubic)),
     ...firstLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
     ...secondLines.map((line) => line.opacity(0, 0.35, easeInOutCubic)),
+    ...intersectionArrows.map((arrow) =>
+      all(arrow.opacity(0, 0.35, easeInOutCubic), arrow.end(0, 0.35)),
+    ),
     ...cherryBalls.map((ball) =>
       all(ball.opacity(0, 0.3, easeInOutCubic), ball.scale(0, 0.3, easeInOutCubic)),
     ),
+    graph().position(CENTER_STAR_GRAPH_POSITION, 0.55, easeInOutCubic),
     centers[0].opacity(0, 0.35, easeInOutCubic),
     centers[0].scale(0, 0.35, easeInOutCubic),
     centers[1].opacity(0, 0.35, easeInOutCubic),
@@ -600,64 +669,93 @@ export default makeScene2D(function* (view) {
     centers[0].fill(brown, 0.35, easeOutCubic),
     uLabel().opacity(1, 0.35, easeOutCubic),
   );
-  yield* waitFor(1);
-  cherryCircles[2].zIndex(1);
-  cherryCircles[2].stroke(redDark);
-  yield* cherryCircles[2].end(1, 0.5);
-  yield* waitFor(0.5);
-  yield* all(
-    rotatingCherry().opacity(1, 0.5, easeOutCubic),
-    sequence(
-      0.05,
-      ...centerCountLines.map((line) =>
-        all(line.end(1, 0.5, easeInOutCubic), line.opacity(0.18, 0.5, easeOutCubic)),
+
+  yield* waitFor(0.25);
+
+  yield* sequence(
+    0.06,
+    ...starLines.map((line, index) =>
+      all(
+        line.opacity(0.2, 0.25, easeOutCubic),
+        line.end(1, 0.48, easeInOutCubic),
+        starDots[index].opacity(1, 0.25, easeOutCubic),
+        starDots[index].scale(1, 0.28, easeOutCubic),
       ),
     ),
-    cherryCircles[2].end(1, 0.6),
   );
 
-  yield* waitFor(0.2);
+  yield* waitFor(0.8);
 
-  for (const [a, b] of centerCherryPairs) {
-    const selected = [a, b];
+  yield* all(
+    rotatingCherry().opacity(1, 0.5, easeOutCubic),
+    starLines[initialCenterStarStep.moving].opacity(0.55, 0.25, easeOutCubic),
+    starLines[initialCenterStarStep.fixed].opacity(0.55, 0.25, easeOutCubic),
+  );
+
+  yield* waitFor(0.4);
+
+  for (const step of centerStarCherrySteps.slice(1)) {
+    const selected = [step.moving, step.fixed];
+
     yield* all(
-      rotatingCherryStems[0].rotation(angleFromU(a), 0.24, easeInOutCubic),
-      rotatingCherryStems[1].rotation(angleFromU(b), 0.24, easeInOutCubic),
-      ...centerCountLines.map((line, index) => {
-        const isSelected = selected.includes(centerNeighbors[index]);
+      rotatingCherryStems[0].rotation(step.movingRotation, 0.72, easeInOutCubic),
+      rotatingCherryStems[1].rotation(step.fixedRotation, 0.72, easeInOutCubic),
+      ...starLines.map((line, index) => {
+        const isSelected = selected.includes(index);
         return all(
-          line.opacity(isSelected ? 0.55 : 0.12, 0.16, easeOutCubic),
-          line.lineWidth(isSelected ? 8 : 5, 0.16, easeOutCubic),
+          line.opacity(isSelected ? 0.58 : 0.14, 0.25, easeOutCubic),
+          line.lineWidth(isSelected ? 9 : 6, 0.25, easeOutCubic),
         );
       }),
-      centers[0].scale(1.58, 0.11, easeOutCubic).to(1.42, 0.11),
+      ...starDots.map((dot, index) =>
+        dot.scale(selected.includes(index) ? 1.2 : 1, 0.25, easeOutCubic),
+      ),
+      centers[0].scale(1.56, 0.12, easeOutCubic).to(1.42, 0.12),
     );
-    yield* waitFor(0.12);
+
+    yield* waitFor(0.04);
   }
 
-  yield* waitFor(0.25);
-  yield* centerFormula().opacity(1, 0.65, easeOutCubic);
+  yield* waitFor(0.55);
+
+  yield* centerFormula().opacity(1, 0.55, easeOutCubic);
+  yield* waitFor(3.6);
+
+  yield* centerFormula().opacity(0, 0.18, easeInOutCubic);
+  centerFormula().tex(LOCAL_CHERRY_BINOMIAL);
+  yield* centerFormula().opacity(1, 0.25, easeOutCubic);
+  yield* waitFor(4.6);
+
+  yield* centerFormula().opacity(0, 0.18, easeInOutCubic);
+  centerFormula().tex(LOCAL_CHERRY_APPROX);
+  yield* centerFormula().opacity(1, 0.25, easeOutCubic);
+  yield* waitFor(3.8);
+
   yield* all(
-    finalFormula().opacity(1, 0.65, easeOutCubic),
-    sequence(
-      1,
-      ...finalFormulaLines.map((line) => line.opacity(1, 0.65, easeOutCubic)),
+    centerFormula().opacity(0, 0.35, easeInOutCubic),
+    rotatingCherry().opacity(0, 0.45, easeInOutCubic),
+    ...starLines.map((line) =>
+      all(line.opacity(0.1, 0.35, easeInOutCubic), line.lineWidth(6, 0.35)),
     ),
+    ...starDots.map((dot) => dot.scale(1, 0.35, easeInOutCubic)),
   );
 
-  yield* waitFor(0.65);
+  yield* sumFormula().opacity(1, 0.55, easeOutCubic);
+  yield* waitFor(6.8);
 
   yield* all(
-    centerFormula().opacity(0, 0.6, easeInOutCubic),
-    finalFormula().opacity(0, 0.6, easeInOutCubic),
-    lowerBoundFormula().opacity(1, 0.6, easeOutCubic),
+    sumFormula().opacity(0, 0.3, easeInOutCubic),
+    lowerBoundFormula().opacity(1, 0.45, easeOutCubic),
   );
 
-  yield* waitFor(0.25);
+  yield* waitFor(3);
 
   yield* all(
-    lowerBoundFormula().position([0, -40], 0.5, easeInOutCubic),
-    upperBound().position([0, -200], 0.5, easeInOutCubic),
+    graph().opacity(0, 0.45, easeInOutCubic),
+    lowerBoundFormula().position([-650, -40], 0.5, easeInOutCubic),
+    lowerBoundFormula().fontSize(60, 0.5, easeInOutCubic),
+    upperBound().position([-650, -200], 0.5, easeInOutCubic),
+    upperBound().fontSize(60, 0.5, easeInOutCubic),
     upperBound().scale(1, 0.5, easeInOutCubic),
     upperBound().opacity(1, 0.35, easeOutCubic),
   );
@@ -670,5 +768,5 @@ export default makeScene2D(function* (view) {
     combinedFormula().opacity(1, 0.6, easeOutCubic),
   );
 
-  yield* waitFor(1.2);
+  yield* waitFor(14);
 });
