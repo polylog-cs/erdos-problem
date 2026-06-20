@@ -158,7 +158,7 @@ function exponentText(exponent: number, impossibleMode: number, zeroCount: numbe
 }
 
 function suffixX(exponentString: string) {
-  return 78 + Math.max(0, exponentString.length - 1) * 16;
+  return 38 + Math.max(0, exponentString.length - 1) * 24;
 }
 
 export default makeScene2D(function* (view) {
@@ -318,7 +318,7 @@ export default makeScene2D(function* (view) {
         offsetX={-1}
         opacity={0}
       />
-      <Node ref={countPointer} x={() => sweepX()} y={axisY} opacity={0}>
+      <Node ref={countPointer} x={() => sweepX()} y={axisY} opacity={0} zIndex={1}>
         <Line
           points={[
             [0, -112],
@@ -356,9 +356,9 @@ export default makeScene2D(function* (view) {
         <PolyLatex tex={'n'} x={-141} y={13} fontSize={70} fill={palette.text} />
         <PolyTxt
           text={movingExponentText}
-          x={-94}
-          y={-35}
-          fontSize={34}
+          x={-120}
+          y={-20}
+          fontSize={42}
           fill={palette.text}
           offsetX={-1}
         />

@@ -8,6 +8,7 @@ import {
   waitFor,
   type Reference,
 } from '@motion-canvas/core';
+import chroma from 'chroma-js';
 
 import erdosPortrait from '../assets/images/people/paul-erdos-vitalyos.jpg';
 import { ergr80Problems, type ErdosProblemCard } from '../data/ergr80Problems';
@@ -15,13 +16,13 @@ import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 import { PolyTxt } from '../utilities/text';
 
-const paper = '#F7EFE2';
+const paper = Solarized.background;
 const ink = Solarized.text;
-const rule = '#D9CEC1';
+const rule = Solarized.base1;
 const openStroke = Solarized.red;
 const solvedStroke = Solarized.green;
-const openTint = '#FBE7E3';
-const solvedTint = '#E4F2E8';
+const openTint = chroma.mix(openStroke, Solarized.background, 0.9, 'rgb');
+const solvedTint = chroma.mix(solvedStroke, Solarized.background, 0.9, 'rgb');
 
 const contentCenterX = -320;
 const viewportWidth = 1220;
@@ -364,9 +365,10 @@ function CardSlot({ index, refs }: { index: number; refs: CardSlotRefs }) {
         <PolyTxt
           ref={refs.status}
           text={statusLabel(problem.status)}
-          fontSize={21}
+          fontSize={28}
           fontWeight={700}
           fill={stroke}
+          x={10}
         />
       </Rect>
       <Rect
@@ -376,7 +378,7 @@ function CardSlot({ index, refs }: { index: number; refs: CardSlotRefs }) {
         width={270}
         height={42}
         radius={6}
-        fill={'#F6F0E6'}
+        fill={Solarized.base3}
         stroke={rule}
         lineWidth={2}
       >
