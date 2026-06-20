@@ -96,6 +96,9 @@ const centerStarAngles = [-162, -126, -90, -54, -18, 18, 54, 90, 126, 162];
 const centerStarStep = 36;
 const centerStarFixedStart = 2;
 const centerStarClockTurns = 6;
+const centerStarFastStepDuration = 0.14;
+const centerStarFastStepHold = 0.11;
+const centerStarWrapStepDuration = 0.46;
 
 const samplePairs: [PointName, PointName][] = [
   ['topLeftLeaf', 'rightLeaf'],
@@ -423,12 +426,12 @@ export default makeScene2D(function* (view) {
       />
       {[
         {
-          from: [-250, -335] as Point,
-          to: [-24, -178] as Point,
+          from: [0, -285] as Point,
+          to: [0, -185] as Point,
         },
         {
-          from: [250, 335] as Point,
-          to: [24, 178] as Point,
+          from: [0, 285] as Point,
+          to: [0, 185] as Point,
         },
       ].map(({ from, to }, index) => (
         <Line
@@ -694,42 +697,109 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.4);
 
-  for (const step of centerStarCherrySteps.slice(1)) {
-    const selected = [step.moving, step.fixed];
+  let fixedIndex = initialCenterStarStep.fixed;
+  let movingIndex = initialCenterStarStep.moving;
+  let fixedRotation = initialCenterStarStep.fixedRotation;
+  let movingRotation = initialCenterStarStep.movingRotation;
+  let completedClockSegments = 0;
+  const totalClockSegments =
+    centerStarClockTurns * (centerStarAngles.length - 1);
+  const formulaAppearSegment = Math.floor(totalClockSegments * 0.5);
+  const formulaBinomialSegment = Math.floor(totalClockSegments * (2 / 3));
+  const formulaReturnSegment = Math.floor(totalClockSegments * 0.84);
 
+  function* updateClockFormula() {
+    if (completedClockSegments === formulaAppearSegment) {
+      centerFormula().tex(LOCAL_CHERRY_APPROX);
+      yield* centerFormula().opacity(1, 0.45, easeOutCubic);
+    }
+
+    if (completedClockSegments === formulaBinomialSegment) {
+      yield* centerFormula().opacity(0, 0.16, easeInOutCubic);
+      centerFormula().tex(LOCAL_CHERRY_BINOMIAL);
+      yield* centerFormula().opacity(1, 0.24, easeOutCubic);
+    }
+
+    if (completedClockSegments === formulaReturnSegment) {
+      yield* centerFormula().opacity(0, 0.16, easeInOutCubic);
+      centerFormula().tex(LOCAL_CHERRY_APPROX);
+      yield* centerFormula().opacity(1, 0.24, easeOutCubic);
+    }
+  }
+
+  function* updateClockSelection(
+    selected: number[],
+    duration: number,
+    pulse = true,
+  ) {
     yield* all(
-      rotatingCherryStems[0].rotation(step.movingRotation, 0.72, easeInOutCubic),
-      rotatingCherryStems[1].rotation(step.fixedRotation, 0.72, easeInOutCubic),
       ...starLines.map((line, index) => {
         const isSelected = selected.includes(index);
         return all(
-          line.opacity(isSelected ? 0.58 : 0.14, 0.25, easeOutCubic),
-          line.lineWidth(isSelected ? 9 : 6, 0.25, easeOutCubic),
+          line.opacity(isSelected ? 0.58 : 0.14, 0.16, easeOutCubic),
+          line.lineWidth(isSelected ? 9 : 6, 0.16, easeOutCubic),
         );
       }),
       ...starDots.map((dot, index) =>
-        dot.scale(selected.includes(index) ? 1.2 : 1, 0.25, easeOutCubic),
+        dot.scale(selected.includes(index) ? 1.2 : 1, 0.16, easeOutCubic),
       ),
-      centers[0].scale(1.56, 0.12, easeOutCubic).to(1.42, 0.12),
+      pulse
+        ? centers[0].scale(1.56, duration / 2, easeOutCubic).to(1.42, duration / 2)
+        : centers[0].scale(1.42, duration, easeInOutCubic),
     );
-
-    yield* waitFor(0.04);
   }
 
-  yield* waitFor(0.55);
+  for (let turn = 0; turn < centerStarClockTurns; turn++) {
+    for (let step = 0; step < centerStarAngles.length - 2; step++) {
+      movingIndex = (movingIndex + 1) % centerStarAngles.length;
+      movingRotation += centerStarStep;
 
-  yield* centerFormula().opacity(1, 0.55, easeOutCubic);
-  yield* waitFor(3.6);
+      yield* all(
+        rotatingCherryStems[0].rotation(
+          movingRotation,
+          centerStarFastStepDuration,
+          easeInOutCubic,
+        ),
+        updateClockSelection(
+          [movingIndex, fixedIndex],
+          centerStarFastStepDuration,
+        ),
+      );
 
-  yield* centerFormula().opacity(0, 0.18, easeInOutCubic);
-  centerFormula().tex(LOCAL_CHERRY_BINOMIAL);
-  yield* centerFormula().opacity(1, 0.25, easeOutCubic);
-  yield* waitFor(4.6);
+      completedClockSegments++;
+      yield* updateClockFormula();
+      yield* waitFor(centerStarFastStepHold);
+    }
 
-  yield* centerFormula().opacity(0, 0.18, easeInOutCubic);
-  centerFormula().tex(LOCAL_CHERRY_APPROX);
-  yield* centerFormula().opacity(1, 0.25, easeOutCubic);
-  yield* waitFor(3.8);
+    fixedIndex = (fixedIndex + 1) % centerStarAngles.length;
+    movingIndex = (fixedIndex + 1) % centerStarAngles.length;
+    fixedRotation += centerStarStep;
+    movingRotation += centerStarStep * 3;
+
+    yield* all(
+      rotatingCherryStems[0].rotation(
+        movingRotation,
+        centerStarWrapStepDuration,
+        easeInOutCubic,
+      ),
+      rotatingCherryStems[1].rotation(
+        fixedRotation,
+        centerStarWrapStepDuration,
+        easeInOutCubic,
+      ),
+      updateClockSelection(
+        [movingIndex, fixedIndex],
+        centerStarWrapStepDuration,
+        false,
+      ),
+    );
+
+    completedClockSegments++;
+    yield* updateClockFormula();
+    yield* waitFor(centerStarFastStepHold);
+  }
+
+  yield* waitFor(1.2);
 
   yield* all(
     centerFormula().opacity(0, 0.35, easeInOutCubic),

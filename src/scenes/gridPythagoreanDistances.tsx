@@ -2,20 +2,18 @@ import { Circle, Line, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
-  chain,
   createRef,
   delay,
   easeInOutCubic,
   easeOutCubic,
   makeRef,
   sequence,
+  tween,
   waitFor,
 } from '@motion-canvas/core';
 
 import { palette } from '../lib/palette';
 import {
-  colorFor,
-  gridSegmentsForDirection,
   latticeDots,
   pythagoreanDirections,
   toScreen,
@@ -31,6 +29,18 @@ import { PolyLatex } from '../utilities/latex';
 
 function equationLhsFor([dx, dy]: Point) {
   return `${Math.abs(dx)}^2+${Math.abs(dy)}^2`;
+}
+
+function formatScaledNumber(value: number) {
+  return value.toFixed(2);
+}
+
+function scaledFiveEquationLhs(scale: number) {
+  return `${formatScaledNumber(4 * scale)}^2+${formatScaledNumber(3 * scale)}^2`;
+}
+
+function scaledFiveEquationRhs(scale: number) {
+  return `=${formatScaledNumber(5 * scale)}^2`;
 }
 
 function fullGridDotsEnabled() {
@@ -49,7 +59,7 @@ const denseGridX = -560;
 const denseGridY = 25;
 const denseFormulaJoinX = denseGridX + 42;
 const denseFormulaY = denseGridY - 70 * 5.5 - 64;
-const denseTextX = 55;
+const sixtyFiveSweepDuration = 12;
 
 export default makeScene2D(function* (view) {
   view.fill(palette.background);
@@ -63,11 +73,6 @@ export default makeScene2D(function* (view) {
   const unitLabel = createRef<PolyLatex>();
   const fiveFormulaLhs = createRef<PolyLatex>();
   const fiveFormulaRhs = createRef<PolyLatex>();
-  const rescaleRuler = createRef<Node>();
-  const rescaleRulerLabel = createRef<PolyLatex>();
-  const globalFiveEdgesLayer = createRef<Node>();
-  const globalFiveEdgesLayers: Node[] = [];
-  const rescaleRulerLength = 5 * smallStep;
 
   const unitWheel = new RotatingWheel({
     directions: pythagoreanDirections(1),
@@ -91,141 +96,94 @@ export default makeScene2D(function* (view) {
     },
   });
 
-  const globalFiveDirections = fiveWheel.directions;
-  const globalFiveEdges = globalFiveDirections.map((direction) =>
-    gridSegmentsForDirection(direction, squareGridExtent),
-  );
-  const globalFiveEdgeLines = globalFiveEdges.map(() => [] as Line[]);
+  function* setFiveEquation(lhs: string, rhs: string, duration = 0) {
+    yield* all(fiveFormulaLhs().tex(lhs, duration), fiveFormulaRhs().tex(rhs, duration));
+  }
+
+  function* tweenFiveEquationScale(
+    fromScale: number,
+    toScale: number,
+    duration: number,
+    finalLhs: string,
+    finalRhs: string,
+  ) {
+    yield* tween(duration, (progress) => {
+      const eased = easeInOutCubic(progress);
+      const scale = fromScale + (toScale - fromScale) * eased;
+
+      fiveFormulaLhs().tex(scaledFiveEquationLhs(scale));
+      fiveFormulaRhs().tex(scaledFiveEquationRhs(scale));
+    });
+
+    yield* setFiveEquation(finalLhs, finalRhs);
+  }
 
   view.add(
-    <Node ref={smallStage} x={smallGridX} y={smallGridY}>
-      <Node ref={smallGrid}>
-        {squareGridCoordinates.map((x, index) => (
-          <Line
-            ref={makeRef(smallLines, index)}
-            points={[
-              [x * smallStep, -squareGridExtent * smallStep],
-              [x * smallStep, squareGridExtent * smallStep],
-            ]}
-            stroke={palette.grid}
-            lineWidth={1}
-            end={0}
-            opacity={0}
-          />
-        ))}
-        {squareGridCoordinates.map((y, index) => (
-          <Line
-            ref={makeRef(smallLines, squareGridCoordinates.length + index)}
-            points={[
-              [-squareGridExtent * smallStep, y * smallStep],
-              [squareGridExtent * smallStep, y * smallStep],
-            ]}
-            stroke={palette.grid}
-            lineWidth={1}
-            end={0}
-            opacity={0}
-          />
-        ))}
-        <Node ref={globalFiveEdgesLayer}>
-          {globalFiveEdges.flatMap((segments, directionIndex) => (
-            <Node
-              ref={makeRef(globalFiveEdgesLayers, directionIndex)}
+    <>
+      <Node ref={smallStage} x={smallGridX} y={smallGridY}>
+        <Node ref={smallGrid}>
+          {squareGridCoordinates.map((x, index) => (
+            <Line
+              ref={makeRef(smallLines, index)}
+              points={[
+                [x * smallStep, -squareGridExtent * smallStep],
+                [x * smallStep, squareGridExtent * smallStep],
+              ]}
+              stroke={palette.grid}
+              lineWidth={1}
+              end={0}
               opacity={0}
-              zIndex={directionIndex}
-            >
-              {segments.map(([[startX, startY], [endX, endY]], edgeIndex) => (
-                <Line
-                  ref={makeRef(globalFiveEdgeLines[directionIndex], edgeIndex)}
-                  points={[
-                    [startX * smallStep, -startY * smallStep],
-                    [endX * smallStep, -endY * smallStep],
-                  ]}
-                  stroke={colorFor(directionIndex, fiveWheel.directions.length)}
-                  lineWidth={2.2}
-                  lineCap={'round'}
-                  opacity={1}
-                  end={1}
-                />
-              ))}
-            </Node>
+            />
           ))}
-        </Node>
-        {latticeDots(squareGridExtent).map(([x, y], index) => (
+          {squareGridCoordinates.map((y, index) => (
+            <Line
+              ref={makeRef(smallLines, squareGridCoordinates.length + index)}
+              points={[
+                [-squareGridExtent * smallStep, y * smallStep],
+                [squareGridExtent * smallStep, y * smallStep],
+              ]}
+              stroke={palette.grid}
+              lineWidth={1}
+              end={0}
+              opacity={0}
+            />
+          ))}
+          {latticeDots(squareGridExtent).map(([x, y], index) => (
+            <Circle
+              ref={makeRef(smallDots, index)}
+              x={x * smallStep}
+              y={y * smallStep}
+              size={14}
+              fill={palette.dot}
+              opacity={0.86}
+              scale={0}
+            />
+          ))}
+
           <Circle
-            ref={makeRef(smallDots, index)}
-            x={x * smallStep}
-            y={y * smallStep}
+            ref={centerDot}
             size={14}
-            fill={palette.dot}
-            opacity={0.86}
+            fill={palette.focus}
+            stroke={palette.background}
+            lineWidth={3}
             scale={0}
           />
-        ))}
-
-        <Circle
-          ref={centerDot}
-          size={14}
-          fill={palette.focus}
-          stroke={palette.background}
-          lineWidth={3}
-          scale={0}
-        />
-        <PolyLatex
-          ref={unitLabel}
-          x={smallStep / 2}
-          y={-22}
-          tex={'1'}
-          fontSize={30}
-          opacity={0}
-        />
-        {unitWheel.view}
-        {fiveWheel.view}
-      </Node>
-      <Node ref={rescaleRuler} x={squareGridExtent * smallStep + 140} y={0} opacity={0}>
-        <Line
-          points={[
-            [-rescaleRulerLength / 2, 0],
-            [rescaleRulerLength / 2, 0],
-          ]}
-          stroke={palette.accent}
-          lineWidth={20}
-          lineCap={'round'}
-          opacity={0.22}
-        />
-        <Line
-          points={[
-            [-rescaleRulerLength / 2, 0],
-            [rescaleRulerLength / 2, 0],
-          ]}
-          stroke={palette.accentDark}
-          lineWidth={4}
-          lineCap={'round'}
-        />
-        {[-0.5, 0, 0.5].map((tick) => (
-          <Line
-            points={[
-              [tick * rescaleRulerLength, -18],
-              [tick * rescaleRulerLength, 18],
-            ]}
-            stroke={palette.ink}
-            lineWidth={tick === 0 ? 2.5 : 4}
-            lineCap={'round'}
-            opacity={tick === 0 ? 0.42 : 0.72}
+          <PolyLatex
+            ref={unitLabel}
+            x={smallStep / 2}
+            y={-22}
+            tex={'1'}
+            fontSize={30}
+            opacity={0}
           />
-        ))}
-        <PolyLatex
-          ref={rescaleRulerLabel}
-          tex={'5'}
-          y={-52}
-          fill={palette.text}
-          fontSize={54}
-          opacity={0.92}
-        />
+          {unitWheel.view}
+          {fiveWheel.view}
+        </Node>
       </Node>
       <PolyLatex
         ref={fiveFormulaLhs}
-        x={smallFormulaJoinX}
-        y={smallFormulaY}
+        x={smallGridX + smallFormulaJoinX}
+        y={smallGridY + smallFormulaY}
         tex={equationLhsFor(fiveWheel.directions[0])}
         fontSize={46}
         offsetX={1}
@@ -233,14 +191,14 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={fiveFormulaRhs}
-        x={smallFormulaJoinX + 17}
-        y={smallFormulaY}
+        x={smallGridX + smallFormulaJoinX + 17}
+        y={smallGridY + smallFormulaY}
         tex={'=5^2'}
         fontSize={46}
         offsetX={-1}
         opacity={0}
       />
-    </Node>,
+    </>,
   );
 
   yield* all(
@@ -318,21 +276,31 @@ export default makeScene2D(function* (view) {
   yield* fiveWheel.active().opacity(0, 0.22, easeInOutCubic);
   yield* waitFor(0.25);
 
-  yield* rescaleRuler().opacity(1, 0.35, easeOutCubic);
+  yield* setFiveEquation('4^2+3^2', '=5^2');
   yield* waitFor(0.35);
 
+  const normalizeDuration = 0.95;
   yield* all(
-    smallStage().scale(0.2, 0.95, easeInOutCubic),
-    rescaleRulerLabel().scale(5, 0.95, easeInOutCubic),
-    rescaleRulerLabel().y(-260, 0.95, easeInOutCubic),
-    delay(0.36, rescaleRulerLabel().tex('1', 0.25)),
+    smallStage().scale(0.2, normalizeDuration, easeInOutCubic),
+    tweenFiveEquationScale(
+      1,
+      0.2,
+      normalizeDuration,
+      '0.80^2+0.60^2',
+      '=1.00^2',
+    ),
   );
   yield* waitFor(0.55);
+
   yield* all(
-    smallStage().scale(1, 0.95, easeInOutCubic),
-    rescaleRulerLabel().scale(1, 0.95, easeInOutCubic),
-    rescaleRulerLabel().y(-52, 0.95, easeInOutCubic),
-    delay(0.14, rescaleRulerLabel().tex('5', 0.25)),
+    smallStage().scale(1, normalizeDuration, easeInOutCubic),
+    tweenFiveEquationScale(
+      0.2,
+      1,
+      normalizeDuration,
+      '4^2+3^2',
+      '=5^2',
+    ),
   );
   yield* waitFor(0.25);
 
@@ -340,30 +308,15 @@ export default makeScene2D(function* (view) {
     centerDot().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaLhs().opacity(0, 0.25, easeInOutCubic),
     fiveFormulaRhs().opacity(0, 0.25, easeInOutCubic),
-    rescaleRuler().opacity(0, 0.25, easeInOutCubic),
     fiveWheel.fadeOut(0.3),
   );
 
   yield* waitFor(0.18);
 
-  yield* sequence(
-    0.2,
-    ...globalFiveEdgesLayers.map((layer) =>
-      chain(layer.opacity(1, 0.2), layer.opacity(0.3, 0.2)),
-    ),
-  );
-
-  yield* waitFor(0.7);
-  yield* globalFiveEdgesLayer().opacity(0, 0.35, easeInOutCubic);
-  yield* waitFor(0.22);
-
   const denseGrid = createRef<Node>();
   const denseVectorFormulaLhs = createRef<PolyLatex>();
   const denseVectorFormulaRhs = createRef<PolyLatex>();
   const whyTitle = createRef<PolyLatex>();
-  const primeLine = createRef<PolyLatex>();
-  const primeList = createRef<PolyLatex>();
-  const productLine = createRef<PolyLatex>();
   const denseCenter = createRef<Circle>();
   const denseStep = 5.5;
   const denseDotEvery = fullGridDotsEnabled() ? 1 : 10;
@@ -426,37 +379,10 @@ export default makeScene2D(function* (view) {
       />
       <PolyLatex
         ref={whyTitle}
-        x={denseTextX}
-        y={-265}
+        x={denseGridX}
+        y={denseFormulaY}
         tex={'\\text{Why is 65 special?}'}
         fontSize={48}
-        offsetX={0}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={primeLine}
-        x={denseTextX}
-        y={-190}
-        tex={'\\text{primes with remainder 1 mod 4}'}
-        fontSize={28}
-        offsetX={0}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={primeList}
-        x={denseTextX}
-        y={-120}
-        tex={'5,13,17,29,37,\\ldots'}
-        fontSize={40}
-        offsetX={0}
-        opacity={0}
-      />
-      <PolyLatex
-        ref={productLine}
-        x={denseTextX}
-        y={-45}
-        tex={'5\\cdot13=65'}
-        fontSize={40}
         offsetX={0}
         opacity={0}
       />
@@ -485,12 +411,16 @@ export default makeScene2D(function* (view) {
 
   yield* waitFor(0.25);
 
+  const sixtyFiveStepDuration =
+    sixtyFiveSweepDuration / Math.max(1, sixtyFiveWheel.directions.length - 1);
+  const sixtyFiveRotationDuration = sixtyFiveStepDuration * 0.72;
+  const sixtyFiveRevealDuration = sixtyFiveStepDuration * 0.28;
+
   for (let index = 1; index < sixtyFiveWheel.directions.length; index++) {
-    const one = 0.05 + 0.6 / (index + 1);
     yield* all(
-      sixtyFiveWheel.rotateArmTo(index, one / 2),
+      sixtyFiveWheel.rotateArmTo(index, sixtyFiveRotationDuration),
       delay(
-        one / 2,
+        sixtyFiveRotationDuration,
         denseVectorFormulaLhs().tex(
           equationLhsFor(sixtyFiveWheel.directions[index]),
           0,
@@ -498,7 +428,7 @@ export default makeScene2D(function* (view) {
       ),
     );
     yield* sixtyFiveWheel.revealRay(index, {
-      duration: one / 2,
+      duration: sixtyFiveRevealDuration,
       opacity: 0.78,
       instantEnd: true,
     });
@@ -511,13 +441,5 @@ export default makeScene2D(function* (view) {
     denseVectorFormulaRhs().opacity(0, 0.25, easeInOutCubic),
     whyTitle().opacity(1, 0.65, easeOutCubic),
   );
-  yield* waitFor(1);
-  yield* all(
-    primeLine().opacity(1, 0.65, easeOutCubic),
-    primeList().opacity(1, 0.65, easeOutCubic),
-  );
-  yield* waitFor(1);
-  yield* waitFor(0.65);
-  yield* productLine().opacity(1, 0.65, easeOutCubic);
-  yield* waitFor(1.3);
+  yield* waitFor(2.2);
 });

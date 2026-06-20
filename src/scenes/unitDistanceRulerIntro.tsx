@@ -1,4 +1,4 @@
-import { Circle, Line, Node } from '@motion-canvas/2d';
+import { Circle, Line, Node, Rect } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
@@ -483,7 +483,7 @@ export default makeScene2D(function* (view) {
   view.add(
     <PolyLatex
       ref={problemStatement}
-      x={0}
+      x={LEFT_TWO_THIRDS_CENTER_X}
       y={-40}
       tex={
         '\\begin{array}{c}' +
@@ -582,7 +582,21 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Node ref={pairCountGroup} x={LEFT_TWO_THIRDS_CENTER_X} y={300} opacity={0}>
+    <Node
+      ref={pairCountGroup}
+      x={LEFT_TWO_THIRDS_CENTER_X}
+      y={260}
+      opacity={0}
+    >
+      <Rect
+        width={410}
+        height={78}
+        radius={8}
+        fill={palette.background}
+        stroke={Solarized.base1}
+        lineWidth={2}
+        opacity={0.92}
+      />
       <PolyLatex
         x={2}
         tex={'\\#\\mathrm{\\ pairs}='}
@@ -601,7 +615,7 @@ export default makeScene2D(function* (view) {
     </Node>,
   );
 
-  yield* problemStatement().write(1.15, easeInOutCubic);
+  yield* problemStatement().write(2.4, easeInOutCubic);
   yield* waitFor(5);
   yield* waitFor(0.7);
   yield* problemStatement().unwrite(0.65, easeInOutCubic);

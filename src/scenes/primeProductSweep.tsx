@@ -1,4 +1,4 @@
-import { Circle, Layout, Node } from '@motion-canvas/2d';
+import { Circle, Node } from '@motion-canvas/2d';
 import { makeScene2D } from '@motion-canvas/2d/lib/scenes';
 import {
   all,
@@ -14,8 +14,14 @@ import { pythagoreanDirections, type Point } from '../lib/pythagoreanGridScene';
 import { RotatingWheel } from '../lib/rotatingWheel';
 import { PolyLatex } from '../utilities/latex';
 
-const sweepDistances = [1105, 1104, 1106];
+const sweepDistance = 1105;
 const starRadius = 370;
+const starX = -560;
+const starY = 25;
+const productY = -430;
+const equationY = -360;
+const equationJoinX = starX + 42;
+const sweepDuration = 15;
 
 function equationLhsFor([dx, dy]: Point) {
   return `${Math.abs(dx)}^2+${Math.abs(dy)}^2`;
@@ -25,35 +31,26 @@ export default makeScene2D(function* (view) {
   view.fill(palette.background);
 
   const product = createRef<PolyLatex>();
-  const distanceLabel = createRef<PolyLatex>();
   const equationLhs = createRef<PolyLatex>();
   const equationRhs = createRef<PolyLatex>();
-  const optimizeLine = createRef<PolyLatex>();
-  const boundLine = createRef<PolyLatex>();
-  const constructionLine = createRef<PolyLatex>();
-  const constructionDetailLine = createRef<PolyLatex>();
   const star = createRef<Node>();
   const center = createRef<Circle>();
 
-  const wheels = sweepDistances.map(
-    (distance) =>
-      new RotatingWheel({
-        directions: pythagoreanDirections(distance),
-        step: starRadius / distance,
-        style: {
-          rayWidth: 2.25,
-          endpointSize: 5.4,
-          activeLineWidth: 5.6,
-          activeEndSize: 12,
-        },
-      }),
-  );
-  const featuredWheel = wheels[0];
+  const wheel = new RotatingWheel({
+    directions: pythagoreanDirections(sweepDistance),
+    step: starRadius / sweepDistance,
+    style: {
+      rayWidth: 2.25,
+      endpointSize: 5.4,
+      activeLineWidth: 5.6,
+      activeEndSize: 12,
+    },
+  });
 
   view.add(
     <>
-      <Node ref={star} x={-305} y={55} opacity={0}>
-        {wheels.map((wheel) => wheel.view)}
+      <Node ref={star} x={starX} y={starY} opacity={0}>
+        {wheel.view}
         <Circle
           ref={center}
           size={13}
@@ -64,86 +61,42 @@ export default makeScene2D(function* (view) {
         />
       </Node>
       <PolyLatex
-        ref={distanceLabel}
-        x={-305}
-        y={-380}
-        tex={`${sweepDistances[0]}`}
-        fontSize={64}
-        opacity={0}
-      />
-      <PolyLatex
         ref={product}
-        x={250}
-        y={-350}
+        x={starX}
+        y={productY}
         tex={'5\\cdot13\\cdot17=1105'}
         fontSize={64}
-        offsetX={-1}
         opacity={0}
       />
       <PolyLatex
         ref={equationLhs}
-        x={560}
-        y={-195}
-        tex={equationLhsFor(featuredWheel.directions[0])}
+        x={equationJoinX}
+        y={equationY}
+        tex={equationLhsFor(wheel.directions[0])}
         fontSize={48}
         offsetX={1}
         opacity={0}
       />
       <PolyLatex
         ref={equationRhs}
-        x={574}
-        y={-195}
-        tex={`=${sweepDistances[0]}^2`}
+        x={equationJoinX + 14}
+        y={equationY}
+        tex={`=${sweepDistance}^2`}
         fontSize={48}
         offsetX={-1}
         opacity={0}
       />
-      <Layout
-        layout
-        direction={'column'}
-        alignItems={'start'}
-        gap={22}
-        x={150}
-        y={0}
-        offsetX={-1}
-      >
-        <PolyLatex
-          ref={optimizeLine}
-          tex={'\\mathrm{if\\ you\\ optimize\\ for\\ general\\ }n:'}
-          fontSize={50}
-          opacity={0}
-        />
-        <PolyLatex
-          ref={boundLine}
-          tex={'n<n^{1+1/\\log\\log n}\\ll n^{1.001}'}
-          fontSize={50}
-          opacity={0}
-        />
-        <PolyLatex
-          ref={constructionLine}
-          tex={'\\Rightarrow\\ \\mathrm{probably\\ no\\ construction}'}
-          fontSize={50}
-          opacity={0}
-        />
-        <PolyLatex
-          ref={constructionDetailLine}
-          tex={'\\mathrm{with\\ }n^{1.0000001}\\mathrm{\\ edges}'}
-          fontSize={50}
-          opacity={0}
-        />
-      </Layout>
     </>,
   );
 
-  function setSweepText(distance: number, direction: Point) {
-    distanceLabel().tex(`${distance}`);
+  function setSweepText(direction: Point) {
     equationLhs().tex(equationLhsFor(direction));
-    equationRhs().tex(`=${distance}^2`);
+    equationRhs().tex(`=${sweepDistance}^2`);
   }
 
-  function* runSweep(wheel: RotatingWheel, distance: number, durationByIndex) {
+  function* runSweep(durationByIndex: (index: number, total: number) => number) {
     wheel.reset();
-    setSweepText(distance, wheel.directions[0]);
+    setSweepText(wheel.directions[0]);
 
     yield* all(
       wheel.active().opacity(1, 0.25, easeOutCubic),
@@ -164,73 +117,15 @@ export default makeScene2D(function* (view) {
     yield* wheel.active().opacity(0, 0.2, easeInOutCubic);
   }
 
-  function* fadeSweepOut(wheel: RotatingWheel) {
-    yield* wheel.fadeOut(0.24);
-    wheel.reset();
-  }
-
-  function* restoreSweepPicture(wheel: RotatingWheel, distance: number) {
-    const lastDirection = wheel.directions[wheel.directions.length - 1];
-
-    setSweepText(distance, lastDirection);
-    wheel.showAll();
-
-    yield* all(
-      product().opacity(1, 0.35, easeOutCubic),
-      //      equationLhs().opacity(1, 0.35, easeOutCubic),
-      //      equationRhs().opacity(1, 0.35, easeOutCubic),
-      ...wheel.rays.map((ray) => ray.opacity(0.68, 0.35, easeOutCubic)),
-      ...wheel.endpoints.map((endpoint) => endpoint.opacity(1, 0.25, easeOutCubic)),
-      ...wheel.endpoints.map((endpoint) => endpoint.scale(1, 0.25, easeOutCubic)),
-    );
-  }
-
   yield* all(
     product().opacity(1, 0.4, easeOutCubic),
-    distanceLabel().opacity(1, 0.4, easeOutCubic),
+    equationLhs().opacity(1, 0.4, easeOutCubic),
+    equationRhs().opacity(1, 0.4, easeOutCubic),
     star().opacity(1, 0.4, easeOutCubic),
     center().scale(1, 0.28, easeOutCubic),
   );
   yield* waitFor(0.35);
 
-  yield* runSweep(wheels[0], sweepDistances[0], (i: number) => 0.01 + 0.5 / (i + 1));
-  yield* waitFor(0.45);
-  yield* all(
-    product().opacity(0, 0.25, easeInOutCubic),
-    equationLhs().opacity(0, 0.25, easeInOutCubic),
-    equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(wheels[0]),
-  );
-
-  yield* waitFor(1);
-  yield* runSweep(wheels[1], sweepDistances[1], () => 0.28);
-  yield* waitFor(0.45);
-  yield* all(
-    equationLhs().opacity(0, 0.25, easeInOutCubic),
-    equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(wheels[1]),
-  );
-
-  yield* waitFor(1);
-  yield* runSweep(wheels[2], sweepDistances[2], () => 0.28);
-  yield* waitFor(0.45);
-  yield* all(
-    equationLhs().opacity(0, 0.25, easeInOutCubic),
-    equationRhs().opacity(0, 0.25, easeInOutCubic),
-    fadeSweepOut(wheels[2]),
-  );
-
-  yield* waitFor(0.25);
-  yield* restoreSweepPicture(wheels[0], sweepDistances[0]);
-  yield* waitFor(0.25);
-  yield* all(
-    optimizeLine().opacity(1, 0.35, easeOutCubic),
-    boundLine().opacity(1, 0.35, easeOutCubic),
-  );
-  yield* waitFor(0.25);
-  yield* all(
-    constructionLine().opacity(1, 0.35, easeOutCubic),
-    constructionDetailLine().opacity(1, 0.35, easeOutCubic),
-  );
+  yield* runSweep((_, total) => sweepDuration / Math.max(1, total - 1));
   yield* waitFor(1.25);
 });

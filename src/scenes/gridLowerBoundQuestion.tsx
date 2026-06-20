@@ -33,9 +33,9 @@ const gridExtent = 4;
 const gridStep = 54;
 const gridSpan = gridExtent * 2 * gridStep;
 const axisY = 188;
-const sceneLayoutX = -240;
+const sceneLayoutX = -285;
 const sceneLayoutScale = 0.88;
-const linearExampleX = -430;
+const linearExampleX = growthAxisTickX.linear;
 const insanePointsetX = growthAxisTickX.quadratic;
 const insanePointsetY = -202;
 const insanePointsetScale = 0.47;
@@ -54,6 +54,11 @@ const impossibleTinyExponentDuration =
 const cardinalNarrationOrder = ['N', 'W', 'E', 'S'] as const;
 const cardinalBuddyIndex = { N: 0, E: 1, W: 2, S: 3 };
 type Point = [number, number];
+
+const countFormulaY = 280;
+const countFormulaLeftX = -255;
+const countFormulaRightX = -10;
+const countLabelTarget: Point = [linearExampleX - 150, -24];
 
 const insanePointRings = [
   { count: 1, radius: 0, phase: 0 },
@@ -167,6 +172,7 @@ export default makeScene2D(function* (view) {
   const impossibleZeroCount = createSignal(impossibleZeroCountStart);
   const gridStage = createRef<Node>();
   const braceGroup = createRef<Node>();
+  const countFormulaLeft = createRef<PolyLatex>();
   const countLabel = createRef<PolyLatex>();
   const countPointer = createRef<Node>();
   const movingCountLabel = createRef<Node>();
@@ -294,12 +300,22 @@ export default makeScene2D(function* (view) {
       </Node>
 
       <PolyLatex
-        ref={countLabel}
-        tex={'2n\\text{ pairs}'}
-        x={growthAxisTickX.linear}
-        y={-24}
+        ref={countFormulaLeft}
+        tex={'\\frac12\\cdot 4n='}
+        x={countFormulaLeftX}
+        y={countFormulaY}
         fontSize={56}
         fill={palette.text}
+        opacity={0}
+      />
+      <PolyLatex
+        ref={countLabel}
+        tex={'2n\\text{ pairs}'}
+        x={countFormulaRightX}
+        y={countFormulaY}
+        fontSize={56}
+        fill={palette.ink}
+        offsetX={-1}
         opacity={0}
       />
       <Node ref={countPointer} x={() => sweepX()} y={axisY} opacity={0}>
@@ -394,6 +410,12 @@ export default makeScene2D(function* (view) {
   yield* revealCardinalBuddiesInNarrationOrder();
   yield* waitFor(4);
 
+  countFormulaLeft().opacity(1);
+  yield* countFormulaLeft().write(1.05, easeInOutCubic);
+  countLabel().opacity(1);
+  yield* countLabel().write(0.75, easeInOutCubic);
+  yield* waitFor(1.35);
+
   yield* all(
     pointsetX(linearExampleX, 0.75, easeInOutCubic),
     gridStage().y(-202, 0.75, easeInOutCubic),
@@ -401,8 +423,9 @@ export default makeScene2D(function* (view) {
     ...grid.gridLines.map((line) => line.stroke(palette.accent, 0.45, easeInOutCubic)),
     braceGroup().opacity(0, 0.35, easeInOutCubic),
     ...grid.buddyLabels.map((label) => label.opacity(0, 0.35, easeInOutCubic)),
+    countFormulaLeft().opacity(0, 0.35, easeInOutCubic),
+    countLabel().position(countLabelTarget, 0.75, easeInOutCubic),
   );
-  yield* countLabel().opacity(1, 0.35, easeOutCubic);
   yield* waitFor(3);
 
   yield* all(
