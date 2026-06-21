@@ -399,13 +399,13 @@ export default makeScene2D(function* (view) {
   );
 
   yield* revealSquareGrid(grid);
-  yield* waitFor(7);
+  yield* waitFor(5);
 
   yield* all(
     braceGroup().opacity(1, 0.25, easeOutCubic),
     sequence(0.08, ...braceLines.map((line) => line.end(1, 0.45, easeInOutCubic))),
   );
-  yield* waitFor(4.5);
+  yield* waitFor(6.5);
 
   yield* revealCardinalBuddiesInNarrationOrder();
   yield* waitFor(4);
@@ -439,7 +439,7 @@ export default makeScene2D(function* (view) {
       ),
     ),
   );
-  yield* waitFor(3);
+  yield* waitFor(2);
 
   yield* all(
     pointsetX(insanePointsetX, 0.95, easeInOutCubic),
@@ -501,7 +501,7 @@ export default makeScene2D(function* (view) {
     ),
   );
 
-  yield* waitFor(4);
+  yield* waitFor(1);
 
   yield* all(
     impossibleLabel().opacity(0, 0.25, easeInOutCubic),
