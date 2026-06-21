@@ -27,6 +27,8 @@ const sceneNames = scenes
 const fps = args.get('fps') ?? '12';
 const scale = args.get('scale') ?? '0.333333';
 const quality = args.get('quality') ?? '45';
+const videoCrf = args.get('crf');
+const videoPreset = args.get('preset');
 const fullGridDots = args.get('fullGridDots') ?? args.get('full-grid-dots');
 const run =
   args.get('run') ??
@@ -63,7 +65,8 @@ function runProcess(command, args) {
 async function encodeScene(sceneName, outputPath) {
   await mkdir(path.dirname(outputPath), {recursive: true});
   await rm(outputPath, {force: true});
-  await runProcess('ffmpeg', [
+
+  const ffmpegArgs = [
     '-hide_banner',
     '-loglevel',
     'warning',
@@ -78,12 +81,24 @@ async function encodeScene(sceneName, outputPath) {
     'scale=ceil(iw/2)*2:ceil(ih/2)*2:flags=bicubic',
     '-c:v',
     'libx264',
+  ];
+
+  if (videoPreset) {
+    ffmpegArgs.push('-preset', videoPreset);
+  }
+  if (videoCrf) {
+    ffmpegArgs.push('-crf', videoCrf);
+  }
+
+  ffmpegArgs.push(
     '-pix_fmt',
     'yuv420p',
     '-movflags',
     '+faststart',
     outputPath,
-  ]);
+  );
+
+  await runProcess('ffmpeg', ffmpegArgs);
 }
 
 const userDataDir = await mkdtemp(path.join(tmpdir(), 'motion-export-chrome-'));

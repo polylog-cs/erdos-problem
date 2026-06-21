@@ -16,10 +16,10 @@ import { PolyLatex } from '../utilities/latex';
 
 const sweepDistance = 1105;
 const starRadius = 370;
-const starX = -560;
-const starY = 25;
-const productY = -430;
-const equationY = -360;
+const starX = -320;
+const starY = 65;
+const productY = -500;
+const equationY = -400;
 const equationJoinX = starX + 42;
 const sweepDuration = 15;
 

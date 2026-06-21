@@ -55,7 +55,7 @@ const smallGridY = 35;
 const smallFormulaJoinX = 42;
 const smallFormulaY = -squareGridExtent * squareGridStep - 64;
 
-const denseGridX = -560;
+const denseGridX = -320;
 const denseGridY = 25;
 const denseFormulaJoinX = denseGridX + 42;
 const denseFormulaY = denseGridY - 70 * 5.5 - 64;
@@ -290,7 +290,7 @@ export default makeScene2D(function* (view) {
       '=1.00^2',
     ),
   );
-  yield* waitFor(0.55);
+  yield* waitFor(2);
 
   yield* all(
     smallStage().scale(1, normalizeDuration, easeInOutCubic),

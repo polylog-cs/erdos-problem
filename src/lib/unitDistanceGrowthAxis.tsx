@@ -4,11 +4,17 @@ import {createRef, type Reference} from '@motion-canvas/core';
 import {Solarized} from '../utilities/color';
 import {PolyLatex} from '../utilities/latex';
 
-export type GrowthAxisTick = 'linear' | 'gpt' | 'threeHalves' | 'quadratic';
+export type GrowthAxisTick =
+  | 'linear'
+  | 'gpt'
+  | 'upperBound'
+  | 'threeHalves'
+  | 'quadratic';
 
 export const growthAxisTickOrder: GrowthAxisTick[] = [
   'linear',
   'gpt',
+  'upperBound',
   'threeHalves',
   'quadratic',
 ];
@@ -16,13 +22,15 @@ export const growthAxisTickOrder: GrowthAxisTick[] = [
 export const growthAxisTickX: Record<GrowthAxisTick, number> = {
   linear: -520,
   gpt: -400,
-  threeHalves: 125,
+  upperBound: -150,
+  threeHalves: 180,
   quadratic: 520,
 };
 
 export const growthAxisTickTex: Record<GrowthAxisTick, string> = {
   linear: 'n',
-  gpt: 'n^{1.014}',
+  gpt: 'n^{1.01}',
+  upperBound: 'n^{4/3}',
   threeHalves: 'n^{3/2}',
   quadratic: 'n^2',
 };
@@ -60,12 +68,14 @@ export function createGrowthAxisRefs(): GrowthAxisRefs {
     ticks: {
       linear: createRef<Line>(),
       gpt: createRef<Line>(),
+      upperBound: createRef<Line>(),
       threeHalves: createRef<Line>(),
       quadratic: createRef<Line>(),
     },
     labels: {
       linear: createRef<PolyLatex>(),
       gpt: createRef<PolyLatex>(),
+      upperBound: createRef<PolyLatex>(),
       threeHalves: createRef<PolyLatex>(),
       quadratic: createRef<PolyLatex>(),
     },

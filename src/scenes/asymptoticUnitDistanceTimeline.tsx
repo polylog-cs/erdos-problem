@@ -6,7 +6,6 @@ import {
   delay,
   easeInOutCubic,
   easeOutCubic,
-  sequence,
   waitFor,
 } from '@motion-canvas/core';
 
@@ -21,7 +20,9 @@ import { palette } from '../lib/palette';
 import { Solarized } from '../utilities/color';
 import { PolyLatex } from '../utilities/latex';
 
+const sceneX = -320;
 const axisY = 90;
+const markerY = -105;
 
 function bubble(
   text: string,
@@ -76,27 +77,35 @@ export default makeScene2D(function* (view) {
   const growthAxis = createGrowthAxisRefs();
   const impossibleSegment = createRef<Line>();
   const gptSegment = createRef<Line>();
+  const unknownSegment = createRef<Line>();
+  const upperBoundSegment = createRef<Line>();
   const impossible = createRef<PolyLatex>();
+  const unknownLabel = createRef<PolyLatex>();
+  const upperBoundMarker = createRef<PolyLatex>();
   const erdos = createRef<Node>();
   const erdosBubble = createRef<Node>();
   const gpt = createRef<Node>();
   const gptBubble = createRef<Node>();
+  const openAiMarker = createRef<Node>();
 
   view.add(
-    <>
+    <Node x={sceneX}>
       <GrowthAxis
         refs={growthAxis}
+        ticks={['linear', 'gpt', 'upperBound', 'threeHalves', 'quadratic']}
         y={axisY}
         initialVisibleTicks={['linear', 'quadratic']}
         labelOffset={{
           linear: 105,
-          gpt: 85,
-          threeHalves: 85,
-          quadratic: 85,
+          gpt: 105,
+          upperBound: 105,
+          threeHalves: 105,
+          quadratic: 105,
         }}
         labelTex={{
           linear: '\\;\\;n^{\\phantom1}',
-          gpt: '\\;\\;\\;\\;\\;\\;n^{1.014}',
+          gpt: '\\;\\;\\;\\;\\;\\;n^{1.01}',
+          upperBound: '\\;\\;\\;\\;n^{4/3}',
           threeHalves: '\\;\\;\\;\\;n^{3/2}',
           quadratic: '\\;\\;n^2',
         }}
@@ -113,6 +122,32 @@ export default makeScene2D(function* (view) {
         opacity={0}
         end={0}
         zIndex={1}
+      />
+      <Line
+        ref={upperBoundSegment}
+        points={[
+          [tickX.upperBound, axisY],
+          [tickX.quadratic, axisY],
+        ]}
+        stroke={Solarized.red}
+        lineWidth={12}
+        lineCap={'round'}
+        opacity={0}
+        end={0}
+        zIndex={2}
+      />
+      <Line
+        ref={unknownSegment}
+        points={[
+          [tickX.gpt, axisY],
+          [tickX.upperBound, axisY],
+        ]}
+        stroke={Solarized.yellow2}
+        lineWidth={12}
+        lineCap={'round'}
+        opacity={0}
+        end={0}
+        zIndex={2}
       />
       <Line
         ref={gptSegment}
@@ -147,7 +182,6 @@ export default makeScene2D(function* (view) {
           'bottomLeft',
         )}
       </Node>
-
       <Node ref={gpt} x={30} y={-240} opacity={0} scale={0.65}>
         <Circle
           size={225}
@@ -157,17 +191,51 @@ export default makeScene2D(function* (view) {
         />
         <Img src={openAiLogo} width={154} />
       </Node>
-      <Node ref={gptBubble} x={450} y={-235} opacity={0} scale={0.7}>
+      <Node ref={gptBubble} x={405} y={-235} opacity={0} scale={0.7}>
         {bubble(
-          '\\text{actually, at least }n^{1.014}',
-          530,
+          '\\text{actually, at least }n^{1.01}',
+          470,
           120,
           40,
           Solarized.base02,
           'left',
         )}
       </Node>
-
+      <Node
+        ref={openAiMarker}
+        x={tickX.gpt}
+        y={markerY}
+        opacity={0}
+        scale={0.42}
+      >
+        <Circle
+          size={225}
+          fill={Solarized.base3}
+          stroke={Solarized.base1}
+          lineWidth={5}
+        />
+        <Img src={openAiLogo} width={154} />
+      </Node>
+      <PolyLatex
+        ref={upperBoundMarker}
+        tex={
+          '\\begin{array}{c}\\text{best known}\\\\[-0.05em]\\text{upper bound}\\end{array}'
+        }
+        x={tickX.upperBound}
+        y={markerY}
+        fontSize={30}
+        fill={Solarized.base00}
+        opacity={0}
+      />
+      <PolyLatex
+        ref={unknownLabel}
+        tex={'???'}
+        x={(tickX.gpt + tickX.upperBound) / 2}
+        y={axisY - 78}
+        fontSize={64}
+        fill={Solarized.yellow2}
+        opacity={0}
+      />
       <PolyLatex
         ref={impossible}
         tex={'\\mathrm{Impossible}'}
@@ -177,7 +245,7 @@ export default makeScene2D(function* (view) {
         fill={Solarized.red}
         opacity={0}
       />
-    </>,
+    </Node>,
   );
 
   yield* all(
@@ -233,10 +301,37 @@ export default makeScene2D(function* (view) {
   yield* all(
     gptSegment().opacity(1, 0.18, easeOutCubic),
     gptSegment().end(1, 0.6, easeInOutCubic),
-    delay(
-      0.18,
-      sequence(0.08, gptBubble().opacity(1, 0.35), gptBubble().scale(1, 0.35)),
-    ),
+    delay(0.18, gptBubble().opacity(1, 0.35, easeOutCubic)),
+    delay(0.18, gptBubble().scale(1, 0.35, easeOutCubic)),
+  );
+  yield* waitFor(1.1);
+
+  yield* all(
+    gptBubble().opacity(0, 0.24, easeInOutCubic),
+    gptBubble().scale(0.92, 0.24, easeInOutCubic),
+    gpt().opacity(0, 0.3, easeInOutCubic),
+    gpt().scale(0.86, 0.3, easeInOutCubic),
+    impossibleSegment().opacity(0, 0.25, easeInOutCubic),
+  );
+
+  yield* all(
+    erdos().position([tickX.threeHalves, markerY], 0.5, easeInOutCubic),
+    erdos().scale(0.3, 0.5, easeInOutCubic),
+    erdos().opacity(1, 0.35, easeOutCubic),
+    growthAxis.ticks.upperBound().opacity(1, 0.25, easeOutCubic),
+    growthAxis.ticks.upperBound().scale(1, 0.25, easeOutCubic),
+    growthAxis.labels.upperBound().opacity(1, 0.35, easeOutCubic),
+    openAiMarker().opacity(1, 0.35, easeOutCubic),
+    upperBoundMarker().opacity(1, 0.35, easeOutCubic),
+  );
+  yield* waitFor(0.15);
+
+  yield* all(
+    delay(0.12, unknownSegment().opacity(1, 0.18, easeOutCubic)),
+    delay(0.12, unknownSegment().end(1, 0.65, easeInOutCubic)),
+    delay(0.2, upperBoundSegment().opacity(1, 0.18, easeOutCubic)),
+    delay(0.2, upperBoundSegment().end(1, 0.55, easeInOutCubic)),
+    delay(0.32, unknownLabel().opacity(1, 0.35, easeOutCubic)),
   );
   yield* waitFor(1.1);
 });

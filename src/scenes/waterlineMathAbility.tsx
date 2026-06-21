@@ -14,6 +14,7 @@ import {
 
 import { palette } from '../lib/palette';
 import vrHeadAlarmed from '../assets/images/vr/with_border/alarmed.png';
+import vrHeadHappy from '../assets/images/vr/with_border/happy.png';
 import vrHeadNeutral from '../assets/images/vr/with_border/neutral.png';
 import { Solarized } from '../utilities/color';
 import { PolyTxt } from '../utilities/text';
@@ -53,6 +54,7 @@ export default makeScene2D(function* (view) {
   const waterlineCallout = createRef<Node>();
   const cheapLabel = createRef<Node>();
   const head = createRef<Node>();
+  const happyHead = createRef<Img>();
   const neutralHead = createRef<Img>();
   const alarmedHead = createRef<Img>();
   const unitConjectureLabel = createRef<PolyTxt>();
@@ -75,7 +77,13 @@ export default makeScene2D(function* (view) {
         zIndex={0}
       />
       <Node ref={head} x={headX} y={headY} opacity={0} scale={0.86} zIndex={3}>
-        <Img ref={neutralHead} src={vrHeadNeutral} width={headWidth} />
+        <Img ref={happyHead} src={vrHeadHappy} width={headWidth} />
+        <Img
+          ref={neutralHead}
+          src={vrHeadNeutral}
+          width={headWidth}
+          opacity={0}
+        />
         <Img
           ref={alarmedHead}
           src={vrHeadAlarmed}
@@ -221,6 +229,11 @@ export default makeScene2D(function* (view) {
     cheapLabel().opacity(1, 0.35, easeOutCubic),
   );
   yield* waitFor(2.2);
+  yield* all(
+    happyHead().opacity(0, 0.35, easeInOutCubic),
+    neutralHead().opacity(1, 0.35, easeInOutCubic),
+  );
+  yield* waitFor(0.3);
 
   yield* all(
     unitConjectureLabel().fill(Solarized.red, 0.28, easeInOutCubic),
@@ -234,12 +247,12 @@ export default makeScene2D(function* (view) {
   yield* waitFor(5);
 
   yield* waterLevel(132, 2.6, linear);
+  yield* waterLevel(levels[2].y + 6, 5.9, linear);
   yield* all(
     neutralHead().opacity(0, 0.28, easeInOutCubic),
     alarmedHead().opacity(1, 0.28, easeInOutCubic),
     head().rotation(-4, 0.28, easeInOutCubic),
   );
-  yield* waterLevel(levels[2].y + 6, 5.9, linear);
   yield* waitFor(0.5);
 
   yield* waterLevel(levels[3].y + 2, 7.6, linear);
