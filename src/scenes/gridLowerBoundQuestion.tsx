@@ -501,7 +501,7 @@ export default makeScene2D(function* (view) {
     ),
   );
 
-  yield* waitFor(6);
+  yield* waitFor(4);
 
   yield* all(
     impossibleLabel().opacity(0, 0.25, easeInOutCubic),
