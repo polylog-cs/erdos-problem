@@ -582,37 +582,35 @@ export default makeScene2D(function* (view) {
   );
 
   view.add(
-    <Node
-      ref={pairCountGroup}
-      x={LEFT_TWO_THIRDS_CENTER_X}
-      y={260}
-      opacity={0}
-    >
-      <Rect
-        width={410}
-        height={78}
-        radius={8}
-        fill={palette.background}
-        stroke={Solarized.base1}
-        lineWidth={2}
-        opacity={0.92}
-      />
-      <PolyLatex
-        x={2}
-        tex={'\\#\\mathrm{\\ pairs}='}
-        fontSize={80}
-        fill={palette.text}
-        offsetX={1}
-      />
-      <PolyLatex
-        ref={pairCountNumber}
-        x={18}
-        tex={pairNumberText(edges.length)}
-        fontSize={80}
-        fill={palette.text}
-        offsetX={-1}
-      />
-    </Node>,
+    <>
+      <Node ref={pairCountGroup} x={LEFT_TWO_THIRDS_CENTER_X} y={260} opacity={0}>
+        <Rect
+          width={620}
+          height={110}
+          x={-120}
+          radius={8}
+          fill={palette.background}
+          stroke={Solarized.base1}
+          lineWidth={2}
+          opacity={0.92}
+        />
+        <PolyLatex
+          x={2}
+          tex={'\\#\\mathrm{\\ pairs}='}
+          fontSize={80}
+          fill={palette.text}
+          offsetX={1}
+        />
+        <PolyLatex
+          ref={pairCountNumber}
+          x={18}
+          tex={pairNumberText(edges.length)}
+          fontSize={80}
+          fill={palette.text}
+          offsetX={-1}
+        />
+      </Node>
+    </>,
   );
 
   yield* problemStatement().write(2.4, easeInOutCubic);
