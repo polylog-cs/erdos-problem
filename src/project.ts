@@ -12,23 +12,25 @@ import gridLowerBoundQuestion from './scenes/gridLowerBoundQuestion?scene';
 import gridPythagoreanDistances from './scenes/gridPythagoreanDistances?scene';
 import polylogo from './scenes/polylogo?scene';
 import primeProductSweep from './scenes/primeProductSweep?scene';
+import thumbnail from './scenes/thumbnail?scene';
 import unitDistanceRulerIntro from './scenes/unitDistanceRulerIntro?scene';
 import waterlineMathAbility from './scenes/waterlineMathAbility?scene';
 
 export default makeProject({
   experimentalFeatures: true,
   scenes: [
-    polylogo,
-    ergr80ProblemScroll,
-    unitDistanceRulerIntro,
-    gridLowerBoundQuestion,
-    cherryCountingTwoWays,
-    gridPythagoreanDistances,
-    primeProductSweep,
-    discreteGeometryAntIsland,
-    cyclotomicPointsetSpiral,
-    asymptoticPushExponent,
-    asymptoticUnitDistanceTimeline,
-    waterlineMathAbility,
+    //polylogo,
+    //ergr80ProblemScroll,
+    //unitDistanceRulerIntro,
+    //gridLowerBoundQuestion,
+    //cherryCountingTwoWays,
+    //gridPythagoreanDistances,
+    //primeProductSweep,
+    //discreteGeometryAntIsland,
+    //cyclotomicPointsetSpiral,
+    //asymptoticPushExponent,
+    //asymptoticUnitDistanceTimeline,
+    //waterlineMathAbility,
+    thumbnail,
   ],
 });
