@@ -10,6 +10,7 @@ import discreteGeometryAntIsland from './scenes/discreteGeometryAntIsland?scene'
 import ergr80ProblemScroll from './scenes/ergr80ProblemScroll?scene';
 import gridLowerBoundQuestion from './scenes/gridLowerBoundQuestion?scene';
 import gridPythagoreanDistances from './scenes/gridPythagoreanDistances?scene';
+import patrons from './scenes/patrons?scene';
 import polylogo from './scenes/polylogo?scene';
 import primeProductSweep from './scenes/primeProductSweep?scene';
 import thumbnail from './scenes/thumbnail?scene';
@@ -31,6 +32,7 @@ export default makeProject({
     //asymptoticPushExponent,
     //asymptoticUnitDistanceTimeline,
     //waterlineMathAbility,
+    patrons,
     thumbnail,
   ],
 });
